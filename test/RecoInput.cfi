@@ -1,0 +1,8 @@
+source = PoolSource {
+  untracked vstring fileNames =
+    {
+      "file:/home/lowette/CMSSW/Production/ttbar_fevt_reco131.root"
+    }
+  untracked int32   maxEvents = -1
+  untracked uint32 skipEvents = 0
+}
