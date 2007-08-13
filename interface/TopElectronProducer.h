@@ -2,7 +2,7 @@
 // Author:  Jan Heyninck, Steven Lowette
 // Created: Tue Apr  10 12:01:49 CEST 2007
 //
-// $Id: TopElectronProducer.h,v 1.8 2007/07/12 19:36:00 lowette Exp $
+// $Id: TopElectronProducer.h,v 1.9 2007/07/31 21:57:30 rwolf Exp $
 //
 
 #ifndef TopObjectProducers_TopElectronProducer_h
@@ -38,7 +38,8 @@ class TopElectronProducer : public edm::EDProducer {
  private:
   
   void removeGhosts(std::vector<TopElectron>*);
-  reco::GenParticleCandidate matchTruth(const reco::CandidateCollection&, const TopElectronType&);
+  reco::GenParticleCandidate findTruth(const reco::CandidateCollection&, const TopElectronType&);
+  void matchTruth(const reco::CandidateCollection&, TopElectronTypeCollection&);
   double electronID(edm::Handle<TopElectronTypeCollection>&, 
 		    edm::Handle<reco::ElectronIDAssociationCollection>&, int);
   
@@ -48,12 +49,15 @@ class TopElectronProducer : public edm::EDProducer {
   bool useElecID_, useTrkIso_, useCalIso_, useResolution_;
   bool useLikelihood_, useGenMatching_, useGhostRemoval_;
   std::string resolutionInput_, likelihoodInput_;
+  double minRecoOnGenEt_, maxRecoOnGenEt_, maxDeltaR_;  
+
+
 
   TopObjectResolutionCalc *resolution_;
   TopLeptonTrackerIsolationPt  *trkIsolation_;
   TopLeptonCaloIsolationEnergy *calIsolation_;
   TopLeptonLRCalc *likelihood_;
-  
+  std::vector<std::pair<const reco::Candidate *, TopElectronType* > >   pairGenRecoElectronsVector;
   PtInverseComparator<TopElectron> ptComparator_;
 };
 
