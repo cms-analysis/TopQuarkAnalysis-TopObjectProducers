@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.cc,v 1.13 2007/07/06 00:27:15 lowette Exp $
+// $Id: TopJetProducer.cc,v 1.14 2007/07/12 19:37:43 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -36,6 +36,13 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   topMuonsLabel_               = iConfig.getParameter<edm::InputTag> ("topMuonsInput");
   doJetCleaning_               = iConfig.getParameter<bool> 	       ("doJetCleaning");
   // TEMP End
+  getJetMCFlavour_               = iConfig.getParameter<bool>          ("getJetMCFlavour");
+  doGenPartonMatch_              = iConfig.getParameter<bool>          ("doGenPartonMatch");
+  genPartonSrc_                  = iConfig.getParameter<edm::InputTag> ("genPartonSrc");
+  doGenJetMatch_                 = iConfig.getParameter<bool>          ("doGenJetMatch");
+  genJetSrc_                     = iConfig.getParameter<edm::InputTag> ("genJetSrc");
+  doPartonJetMatch_              = iConfig.getParameter<bool>          ("doPartonJetMatch");
+  partonJetSrc_                  = iConfig.getParameter<edm::InputTag> ("partonJetSrc");
   addResolutions_             	 = iConfig.getParameter<bool>          ("addResolutions");
   caliJetResoFile_               = iConfig.getParameter<std::string>   ("caliJetResoFile");
   storeBTagInfo_                 = iConfig.getParameter<bool>          ("storeBTagInfo");
@@ -45,7 +52,6 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   ignoreSoftElectronFromAOD_     = iConfig.getParameter<bool>          ("ignoreSoftElectronFromAOD");
   keepDiscriminators_            = iConfig.getParameter<bool>          ("keepDiscriminators");
   keepJetTagRefs_                = iConfig.getParameter<bool>          ("keepJetTagRefs");
-  getJetMCFlavour_               = iConfig.getParameter<bool>          ("getJetMCFlavour");
   computeJetCharge_              = iConfig.getParameter<bool>          ("computeJetCharge"); 
   storeAssociatedTracks_         = iConfig.getParameter<bool>          ("storeAssociatedTracks"); 
 
@@ -55,15 +61,14 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   MUISOCUT_=0.1;//cut on muon isolation for jet cleaning
   // TEMP End
     
-  // construct resolution calculator
-  if (addResolutions_) theResoCalc_ = new TopObjectResolutionCalc(caliJetResoFile_);
   // construct the jet flavour identifier
   if (getJetMCFlavour_) jetFlavId_ = new JetFlavourIdentifier(iConfig.getParameter<edm::ParameterSet>("jetIdParameters"));
+  // construct resolution calculator
+  if (addResolutions_) theResoCalc_ = new TopObjectResolutionCalc(caliJetResoFile_);
 
   // construct Jet Track Associator
   trackAssociationPSet_     = iConfig.getParameter<edm::ParameterSet>("trackAssociation");
   simpleJetTrackAssociator_ = reco::helper::SimpleJetTrackAssociator(trackAssociationPSet_);      
-
   // construct Jet Charge Computer
   jetChargePSet_        = iConfig.getParameter<edm::ParameterSet>("jetCharge");
   jetCharge_            = JetCharge(jetChargePSet_);
@@ -100,9 +105,28 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
   std::vector<TopMuon> muons=*muonsHandle;
   // TEMP End
 
-  // tracks Jet Track Association, by hand in CMSSW_1_3_X
-  edm::Handle<reco::TrackCollection> hTracks;
-  iEvent.getByLabel(trackAssociationPSet_.getParameter<edm::InputTag>("tracks"), hTracks);
+  if (doJetCleaning_) {
+    // TEMP Jet cleaning from electrons
+    //select isolated leptons to remove from jets collection
+    electrons=selectIsolated(electrons,ELEISOCUT_,iSetup,iEvent);
+    muons=selectIsolated(muons,MUISOCUT_,iSetup,iEvent);
+    // TEMP End
+  }
+
+  // for jet flavour
+  if (getJetMCFlavour_) jetFlavId_->readEvent(iEvent);
+
+  // Get the vector of generated particles from the event if needed
+  edm::Handle<reco::CandidateCollection> particles;
+  if (doGenPartonMatch_) iEvent.getByLabel(genPartonSrc_, particles);
+  // Get the vector of GenJets from the event if needed
+  edm::Handle<reco::GenJetCollection> genJets;
+  if (doGenJetMatch_) iEvent.getByLabel(genJetSrc_, genJets);
+/* TO BE IMPLEMENTED FOR >= 1_5_X
+  // Get the vector of PartonJets from the event if needed
+  edm::Handle<reco::SomePartonJetType> particles;
+  if (doPartonJetMatch_) iEvent.getByLabel(partonJetSrc_, partonJets);
+*/
 
   // Get the vector of jet tags with b-tagging info
   std::vector<edm::Handle<std::vector<reco::JetTag> > > jetTags_testManyByType ;
@@ -112,40 +136,33 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
   edm::Handle<reco::TrackProbabilityTagInfoCollection> jetsInfoHandleTP;
   edm::Handle<reco::TrackCountingTagInfoCollection> jetsInfoHandleTC;
 
-  // for jet flavour
-  if (getJetMCFlavour_) jetFlavId_->readEvent(iEvent);
-
- if (doJetCleaning_) {
-  // TEMP Jet cleaning from electrons
-  //select isolated leptons to remove from jets collection
-  electrons=selectIsolated(electrons,ELEISOCUT_,iSetup,iEvent);
-  muons=selectIsolated(muons,MUISOCUT_,iSetup,iEvent);
-  // TEMP End
- }
+  // tracks Jet Track Association, by hand in CMSSW_1_3_X
+  edm::Handle<reco::TrackCollection> hTracks;
+  iEvent.getByLabel(trackAssociationPSet_.getParameter<edm::InputTag>("tracks"), hTracks);
 
 
   // loop over jets
   std::vector<TopJet> * topJets = new std::vector<TopJet>(); 
   for (size_t j = 0; j < recjets->size(); j++) {
  
-   if (doJetCleaning_) {
-   // TEMP Jet cleaning from electrons
-    //check that the jet doesn't match in deltaR with an isolated lepton
-    //if it does, then it needs to be cleaned (ie don't put it in the TopJet collection)
-    //FIXME: don't do muons until have a sensible cut value on their isolation
-    float mindr=9999.;
-    for (size_t ie=0; ie<electrons.size(); ie++) {
-      float dr=DeltaR<reco::Candidate>()((*recjets)[j],electrons[ie]);
-      if (dr<mindr) {
-	mindr=dr;
+    if (doJetCleaning_) {
+    // TEMP Jet cleaning from electrons
+      //check that the jet doesn't match in deltaR with an isolated lepton
+      //if it does, then it needs to be cleaned (ie don't put it in the TopJet collection)
+      //FIXME: don't do muons until have a sensible cut value on their isolation
+      float mindr=9999.;
+      for (size_t ie=0; ie<electrons.size(); ie++) {
+        float dr=DeltaR<reco::Candidate>()((*recjets)[j],electrons[ie]);
+        if (dr<mindr) {
+          mindr=dr;
+        }
       }
+      //if the jet is closely matched in dR to electron, skip it
+      if (mindr<LEPJETDR_) {
+        continue;
+      }
+    // TEMP End
     }
-    //if the jet is closely matched in dR to electron, skip it
-    if (mindr<LEPJETDR_) {
-      continue;
-    }
-  // TEMP End
-   }
 
     // construct the TopJet
     TopJet ajet;
@@ -159,13 +176,55 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
         ajet.setRecJet((*recjets)[j]);
       }
     }
-    // if cal jet found...
+    // if cal jet found... do all the rest
     if (cjFound) {
+
       // get the MC flavour information for this jet
       if (getJetMCFlavour_) {
         JetFlavour jetFlavour = jetFlavId_->identifyBasedOnPartons((*recjets)[j]);
         ajet.setPartonFlavour(jetFlavour.flavour());
       }
+      // do the parton matching
+      if (doGenPartonMatch_) {
+        // initialize best match as null
+        reco::GenParticleCandidate bestParton(0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
+        float bestDR = 0;
+        // find the closest parton
+        for (reco::CandidateCollection::const_iterator itParton = particles->begin(); itParton != particles->end(); ++itParton) {
+          reco::GenParticleCandidate aParton = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&*itParton)));
+          if (aParton.status()==3 &&
+              (abs(aParton.pdgId())==1 || abs(aParton.pdgId())==2 || abs(aParton.pdgId())==3 || abs(aParton.pdgId())==4 || abs(aParton.pdgId())==5)) {
+            float currDR = DeltaR<reco::Candidate>()(aParton, ajet);
+            if (bestDR == 0 || currDR < bestDR) {
+              bestParton = aParton;
+              bestDR = currDR;
+            }
+          }
+          ajet.setGenParton(bestParton);
+        }
+      }
+      // do the GenJet matching
+      if (doGenJetMatch_) {
+        // initialize best match as null
+//NEED TO INITIALIZE TO ZERO
+        reco::GenJet bestGenJet;//0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
+        float bestDR = 0;
+        // find the closest parton
+        for (reco::GenJetCollection::const_iterator itGenJet = genJets->begin(); itGenJet != genJets->end(); ++itGenJet) {
+// do we need some criteria?      if (itGenJet->status()==3) {
+            float currDR = DeltaR<reco::Candidate>()(*itGenJet, ajet);
+            if (bestDR == 0 || currDR < bestDR) {
+              bestGenJet = *itGenJet;
+              bestDR = currDR;
+            }
+//          }
+          ajet.setGenJet(*itGenJet);
+        }
+      }
+      // TO BE IMPLEMENTED FOR >=1_5_X: do the PartonJet matching
+      if (doPartonJetMatch_) {
+      }
+
       // add b-tag info if available & required
       if (storeBTagInfo_) {
         for(size_t k=0; k<jetTags_testManyByType.size(); k++){

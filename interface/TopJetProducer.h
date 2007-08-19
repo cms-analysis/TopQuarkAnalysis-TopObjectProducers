@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.h,v 1.12 2007/06/30 14:38:12 gpetrucc Exp $
+// $Id: TopJetProducer.h,v 1.13 2007/07/06 00:27:16 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopJetProducer_h
@@ -13,7 +13,7 @@
    with possible adding of resolutions and more things to come
 
   \author   Jan Heyninck
-  \version  $Id: TopJetProducer.h,v 1.12 2007/06/30 14:38:12 gpetrucc Exp $
+  \version  $Id: TopJetProducer.h,v 1.13 2007/07/06 00:27:16 lowette Exp $
 */
 
 
@@ -58,31 +58,35 @@ class TopJetProducer : public edm::EDProducer {
     edm::InputTag recJetsLabel_;
     edm::InputTag caliJetsLabel_;
     // TEMP Jet cleaning from electrons
+    bool          doJetCleaning_;
     edm::InputTag topElectronsLabel_;
     edm::InputTag topMuonsLabel_;
-    bool          doJetCleaning_;
+    float LEPJETDR_;
+    float ELEISOCUT_;
+    float MUISOCUT_;
     // TEMP End
+    bool          getJetMCFlavour_;
+    bool          doGenPartonMatch_;
+    edm::InputTag genPartonSrc_;
+    bool          doGenJetMatch_;
+    edm::InputTag genJetSrc_;
+    bool          doPartonJetMatch_;
+    edm::InputTag partonJetSrc_;
     bool          addResolutions_;
     std::string   caliJetResoFile_;
     bool          storeBTagInfo_;
     bool          ignoreTrackCountingFromAOD_;
     bool          ignoreTrackProbabilityFromAOD_;
-    bool          ignoreSoftMuonFromAOD_;      
-    bool          ignoreSoftElectronFromAOD_; 
-    bool          keepDiscriminators_; 
+    bool          ignoreSoftMuonFromAOD_;
+    bool          ignoreSoftElectronFromAOD_;
+    bool          keepDiscriminators_;
     bool          keepJetTagRefs_;
-    bool          getJetMCFlavour_;
-
     bool          storeAssociatedTracks_;
     edm::ParameterSet trackAssociationPSet_;
-
     bool          computeJetCharge_;
     edm::ParameterSet jetChargePSet_;
 
     // TEMP Jet cleaning from electrons
-    float LEPJETDR_;
-    float ELEISOCUT_;
-    float MUISOCUT_;
     // TEMP End
 
     // tools
