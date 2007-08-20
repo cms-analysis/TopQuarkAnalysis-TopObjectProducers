@@ -2,7 +2,7 @@
 // Author:  Jan Heyninck, Steven Lowette
 // Created: Tue Apr  10 12:01:49 CEST 2007
 //
-// $Id: TopElectronProducer.cc,v 1.12 2007/07/31 21:59:17 rwolf Exp $
+// $Id: TopElectronProducer.cc,v 1.12.2.1 2007/08/13 10:50:03 jandrea Exp $
 //
 
 #include <vector>
@@ -152,7 +152,7 @@ TopElectronProducer::findTruth(const reco::CandidateCollection& parts, const Top
   for(unsigned int i=0; i!= pairGenRecoElectronsVector.size(); i++){
     std::pair<const reco::Candidate*, TopElectronType*> pairGenRecoElectrons;
     pairGenRecoElectrons = pairGenRecoElectronsVector[i];
-    if(   abs(elec.pt() - (pairGenRecoElectrons.second)->pt()) < 0.00001   ) {
+    if(   fabs(elec.pt() - (pairGenRecoElectrons.second)->pt()) < 0.00001   ) {
       //cout << "elec.pt()  " << elec.pt()  << "   pairGenRecoElectrons.second->pt " << (pairGenRecoElectrons.second)->pt() << endl;
       reco::GenParticleCandidate aGenElectron = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(pairGenRecoElectrons.first)));
       theGenElectron = aGenElectron;
