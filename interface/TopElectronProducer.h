@@ -2,7 +2,7 @@
 // Author:  Jan Heyninck, Steven Lowette
 // Created: Tue Apr  10 12:01:49 CEST 2007
 //
-// $Id: TopElectronProducer.h,v 1.9 2007/07/31 21:57:30 rwolf Exp $
+// $Id: TopElectronProducer.h,v 1.9.2.1 2007/08/13 10:50:02 jandrea Exp $
 //
 
 #ifndef TopObjectProducers_TopElectronProducer_h
@@ -58,7 +58,8 @@ class TopElectronProducer : public edm::EDProducer {
   TopLeptonCaloIsolationEnergy *calIsolation_;
   TopLeptonLRCalc *likelihood_;
   std::vector<std::pair<const reco::Candidate *, TopElectronType* > >   pairGenRecoElectronsVector;
-  PtInverseComparator<TopElectron> ptComparator_;
+  GreaterByPt<TopElectron> ptComparator_;
+
 };
 
 #endif

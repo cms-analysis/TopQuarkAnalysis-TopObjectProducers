@@ -2,7 +2,7 @@
 // Author:  Christophe Delaere
 // Created: Thu Jul  26 11:08:00 CEST 2007
 //
-// $Id: $
+// $Id: TopTauProducer.cc,v 1.1 2007/07/28 09:56:27 delaer Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopTauProducer.h"
@@ -20,7 +20,7 @@
 
 // specialization of the PtInverseComparator: TopTau is not (yet) a candidate.
 template<>
-bool PtInverseComparator<TopTau>::operator()( const TopTau & t1, const TopTau & t2 ) const {
+bool GreaterByPt<TopTau>::operator()( const TopTau & t1, const TopTau & t2 ) const {
   return t1.getJetTag()->jet().pt() > t2.getJetTag()->jet().pt();
 }
 
