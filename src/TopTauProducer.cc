@@ -2,7 +2,7 @@
 // Author:  Christophe Delaere
 // Created: Thu Jul  26 11:08:00 CEST 2007
 //
-// $Id: TopTauProducer.cc,v 1.1 2007/07/28 09:56:27 delaer Exp $
+// $Id: TopTauProducer.cc,v 1.1.2.1 2007/08/22 14:29:47 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopTauProducer.h"
@@ -48,7 +48,7 @@ TopTauProducer::TopTauProducer(const edm::ParameterSet & iConfig) {
 
   // construct resolution calculator
   if (addResolutions_) {
-    theResoCalc_ = new TopObjectResolutionCalc(tauResoFile_);
+    theResoCalc_ = new TopObjectResolutionCalc(tauResoFile_,iConfig.getParameter<bool>("useNNresolution"));
   }
 
   // produces vector of taus
