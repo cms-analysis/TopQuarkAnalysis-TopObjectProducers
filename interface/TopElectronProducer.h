@@ -2,7 +2,7 @@
 // Author:  Jan Heyninck, Steven Lowette
 // Created: Tue Apr  10 12:01:49 CEST 2007
 //
-// $Id: TopElectronProducer.h,v 1.9.2.1 2007/08/13 10:50:02 jandrea Exp $
+// $Id: TopElectronProducer.h,v 1.9.2.2 2007/08/22 14:29:42 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopElectronProducer_h
@@ -49,17 +49,14 @@ class TopElectronProducer : public edm::EDProducer {
   bool useElecID_, useTrkIso_, useCalIso_, useResolution_;
   bool useLikelihood_, useGenMatching_, useGhostRemoval_;
   std::string resolutionInput_, likelihoodInput_;
-  double minRecoOnGenEt_, maxRecoOnGenEt_, maxDeltaR_;  
-
-
+  double minRecoOnGenEt_, maxRecoOnGenEt_, maxDeltaR_;
 
   TopObjectResolutionCalc *resolution_;
   TopLeptonTrackerIsolationPt  *trkIsolation_;
   TopLeptonCaloIsolationEnergy *calIsolation_;
   TopLeptonLRCalc *likelihood_;
-  std::vector<std::pair<const reco::Candidate *, TopElectronType* > >   pairGenRecoElectronsVector;
+  std::vector<std::pair<const reco::Candidate *, TopElectronType* > >  pairGenRecoElectronsVector;
   GreaterByPt<TopElectron> ptComparator_;
-
 };
 
 #endif

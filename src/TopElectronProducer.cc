@@ -2,7 +2,7 @@
 // Author:  Jan Heyninck, Steven Lowette
 // Created: Tue Apr  10 12:01:49 CEST 2007
 //
-// $Id: TopElectronProducer.cc,v 1.12.2.3 2007/08/22 13:21:59 rwolf Exp $
+// $Id: TopElectronProducer.cc,v 1.12.2.4 2007/08/24 13:52:27 delaer Exp $
 //
 
 #include <vector>
@@ -59,13 +59,11 @@ TopElectronProducer::produce(edm::Event& evt, const edm::EventSetup& setup)
   edm::Handle<reco::ElectronIDAssociationCollection> elecIDs;
   if( useElecID_) evt.getByLabel( elecID_, elecIDs );
 
-  //TopElectronTypeCollection electrons;
   TopElectronTypeCollection electrons = *elecs;
   if ( useGenMatching_) {
     matchTruth(*parts, electrons ) ;
   }
-  
-  
+    
   //prepare isolation calculation
   if( useTrkIso_) trkIsolation_= new TopLeptonTrackerIsolationPt ( setup );
   if( useCalIso_) calIsolation_= new TopLeptonCaloIsolationEnergy( setup );
@@ -141,13 +139,9 @@ TopElectronProducer::electronID(edm::Handle<TopElectronTypeCollection>& elecs,
   return id->cutBasedDecision();
 }
 
-
-
-//get gen
 reco::GenParticleCandidate
 TopElectronProducer::findTruth(const reco::CandidateCollection& parts, const TopElectronType& elec)
 {
-
   reco::GenParticleCandidate theGenElectron(0, reco::Particle::LorentzVector(0,0,0,0), reco::Particle::Point(0,0,0), 0, 0);
   for(unsigned int i=0; i!= pairGenRecoElectronsVector.size(); i++){
     std::pair<const reco::Candidate*, TopElectronType*> pairGenRecoElectrons;
@@ -161,8 +155,6 @@ TopElectronProducer::findTruth(const reco::CandidateCollection& parts, const Top
  return theGenElectron;
 }
 
-
-//FindGen
 void 
 TopElectronProducer::matchTruth(const reco::CandidateCollection& particles, TopElectronTypeCollection& electrons)
 {
