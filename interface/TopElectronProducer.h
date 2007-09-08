@@ -1,25 +1,37 @@
 //
-// Author:  Jan Heyninck, Steven Lowette
-// Created: Tue Apr  10 12:01:49 CEST 2007
-//
-// $Id: TopElectronProducer.h,v 1.9.2.2 2007/08/22 14:29:42 lowette Exp $
+// $Id: TopElectronProducer.h,v 1.14 2007/09/07 22:23:08 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopElectronProducer_h
 #define TopObjectProducers_TopElectronProducer_h
 
-#include <string>
+/**
+  \class    TopElectronProducer TopElectronProducer.h "TopQuarkAnalysis/TopObjectProducers/interface/TopElectronProducer.h"
+  \brief    Produces TopElectron's
 
-#include "FWCore/Framework/interface/Event.h"
+   TopElectronProducer produces TopElectron's starting from an ElectronType
+   collection, with possible matching to generator level, adding of resolutions
+   and calculation of a lepton likelihood ratio
+
+  \author   Jan Heyninck, Steven Lowette
+  \version  $Id: TopElectronProducer.h,v 1.14 2007/09/07 22:23:08 lowette Exp $
+*/
+
+
 #include "FWCore/Framework/interface/EDProducer.h"
-#include "FWCore/ParameterSet/interface/InputTag.h"
+#include "FWCore/Framework/interface/Event.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "PhysicsTools/Utilities/interface/PtComparator.h"
-#include "AnalysisDataFormats/TopObjects/interface/TopLepton.h"
+#include "FWCore/ParameterSet/interface/InputTag.h"
 
+#include "PhysicsTools/Utilities/interface/PtComparator.h"
 #include "AnalysisDataFormats/Egamma/interface/ElectronID.h"
 #include "AnalysisDataFormats/Egamma/interface/ElectronIDAssociation.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
+
+#include "AnalysisDataFormats/TopObjects/interface/TopLepton.h"
+
+#include <string>
+
 
 class TopObjectResolutionCalc;
 class TopLeptonTrackerIsolationPt;
@@ -29,34 +41,50 @@ class TopLeptonLRCalc;
 
 class TopElectronProducer : public edm::EDProducer {
   
- public:
-  
-  explicit TopElectronProducer(const edm::ParameterSet&);
-  ~TopElectronProducer();  
-  virtual void produce(edm::Event&, const edm::EventSetup&);
-  
- private:
-  
-  void removeGhosts(std::vector<TopElectron>*);
-  reco::GenParticleCandidate findTruth(const reco::CandidateCollection&, const TopElectronType&);
-  void matchTruth(const reco::CandidateCollection&, TopElectronTypeCollection&);
-  double electronID(edm::Handle<TopElectronTypeCollection>&, 
-		    edm::Handle<reco::ElectronIDAssociationCollection>&, int);
-  
- private:
+  public:
 
-  edm::InputTag src_, gen_, elecID_;
-  bool useElecID_, useTrkIso_, useCalIso_, useResolution_;
-  bool useLikelihood_, useGenMatching_, useGhostRemoval_;
-  std::string resolutionInput_, likelihoodInput_;
-  double minRecoOnGenEt_, maxRecoOnGenEt_, maxDeltaR_;
+    explicit TopElectronProducer(const edm::ParameterSet & iConfig);
+    ~TopElectronProducer();  
 
-  TopObjectResolutionCalc *resolution_;
-  TopLeptonTrackerIsolationPt  *trkIsolation_;
-  TopLeptonCaloIsolationEnergy *calIsolation_;
-  TopLeptonLRCalc *likelihood_;
-  std::vector<std::pair<const reco::Candidate *, TopElectronType* > >  pairGenRecoElectronsVector;
-  GreaterByPt<TopElectron> ptComparator_;
+    virtual void produce(edm::Event & iEvent, const edm::EventSetup & iSetup);
+
+  private:
+
+    void removeGhosts(std::vector<TopElectronType> & elecs);
+    reco::GenParticleCandidate findTruth(const reco::CandidateCollection & parts, const TopElectronType & elec);
+    void matchTruth(const reco::CandidateCollection & particles, std::vector<TopElectronType> & electrons);
+    double electronID(const edm::Handle<TopElectronTypeCollection> & elecs, 
+                      const edm::Handle<reco::ElectronIDAssociationCollection> & elecIDs, int idx);
+
+  private:
+
+    // configurables
+    edm::InputTag electronSrc_;
+    bool          doGhostRemoval_;
+    bool          doGenMatch_;
+    edm::InputTag genPartSrc_;
+    double        maxDeltaR_;
+    double        minRecoOnGenEt_;
+    double        maxRecoOnGenEt_;
+    bool          addResolutions_;
+    bool          useNNReso_;
+    std::string   electronResoFile_;
+    bool          doTrkIso_;
+    bool          doCalIso_;
+    bool          addElecID_;
+    edm::InputTag elecIDSrc_;
+    bool          addLRValues_;
+    std::string   electronLRFile_;
+    // tools
+    TopObjectResolutionCalc      * theResoCalc_;
+    TopLeptonTrackerIsolationPt  * trkIsolation_;
+    TopLeptonCaloIsolationEnergy * calIsolation_;
+    TopLeptonLRCalc              * theLeptonLRCalc_;
+    GreaterByPt<TopElectron>       pTComparator_;
+    // other
+    std::vector<std::pair<const reco::Candidate *, TopElectronType *> > pairGenRecoElectronsVector_;
+
 };
+
 
 #endif
