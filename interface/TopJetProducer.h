@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.h,v 1.13.2.1 2007/08/19 15:26:16 lowette Exp $
+// $Id: TopJetProducer.h,v 1.19 2007/09/28 13:50:56 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopJetProducer_h
@@ -13,7 +13,7 @@
    with possible adding of resolutions and more things to come
 
   \author   Jan Heyninck
-  \version  $Id: TopJetProducer.h,v 1.13.2.1 2007/08/19 15:26:16 lowette Exp $
+  \version  $Id: TopJetProducer.h,v 1.19 2007/09/28 13:50:56 lowette Exp $
 */
 
 
@@ -25,11 +25,12 @@
 #include "PhysicsTools/Utilities/interface/EtComparator.h"
 
 #include "AnalysisDataFormats/TopObjects/interface/TopJet.h"
-#include "AnalysisDataFormats/TopObjects/interface/TopLepton.h"
-
+#include "AnalysisDataFormats/TopObjects/interface/TopElectron.h"
+#include "AnalysisDataFormats/TopObjects/interface/TopMuon.h"
 
 #include "PhysicsTools/JetCharge/interface/JetCharge.h"
 #include "TopQuarkAnalysis/TopObjectProducers/interface/SimpleJetTrackAssociator.h"
+
 
 class JetFlavourIdentifier;
 class TopObjectResolutionCalc;
@@ -47,11 +48,8 @@ class TopJetProducer : public edm::EDProducer {
   private:
 
     // TEMP Jet cleaning from electrons
-    std::vector<TopElectron> selectIsolated(const std::vector<TopElectron> &electrons, float isoCut,
-    							    const edm::EventSetup &iSetup, const edm::Event &iEvent);
-    std::vector<TopMuon> selectIsolated(const std::vector<TopMuon> &muons, float isoCut,
-    							    const edm::EventSetup &iSetup, const edm::Event &iEvent);
-
+    std::vector<TopElectron> selectIsolated(const std::vector<TopElectron> & electrons, float isoCut);
+    std::vector<TopMuon>     selectIsolated(const std::vector<TopMuon> & muons,         float isoCut);
     // TEMP End
 
     // configurables
@@ -92,8 +90,8 @@ class TopJetProducer : public edm::EDProducer {
     // tools
     TopObjectResolutionCalc *   theResoCalc_;
     JetFlavourIdentifier *      jetFlavId_;
+    JetCharge *                 jetCharge_;
     GreaterByEt<TopJet>         eTComparator_;
-    JetCharge                   jetCharge_;
     reco::helper::SimpleJetTrackAssociator    simpleJetTrackAssociator_;
 
 };

@@ -1,18 +1,19 @@
 //
-// $Id: TopMuonProducer.cc,v 1.12 2007/09/07 22:23:07 lowette Exp $
+// $Id: TopMuonProducer.cc,v 1.7.2.3 2007/09/08 00:01:26 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopMuonProducer.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ParameterSet/interface/FileInPath.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
 #include "PhysicsTools/Utilities/interface/DeltaR.h"
 
-#include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonLRCalc.h"
 #include "TopQuarkAnalysis/TopObjectResolutions/interface/TopObjectResolutionCalc.h"
-#include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonTrackerIsolationPt.h"
-#include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonCaloIsolationEnergy.h"
+#include "TopQuarkAnalysis/TopLeptonSelection/interface/TrackerIsolationPt.h"
+#include "TopQuarkAnalysis/TopLeptonSelection/interface/CaloIsolationEnergy.h"
+#include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonLRCalc.h"
 
 #include <vector>
 #include <memory>
@@ -34,14 +35,19 @@ TopMuonProducer::TopMuonProducer(const edm::ParameterSet & iConfig) {
   muonResoFile_  = iConfig.getParameter<std::string>  ( "muonResoFile" );
   // isolation configurables
   doTrkIso_      = iConfig.getParameter<bool>         ( "doTrkIsolation" );
+  tracksSrc_     = iConfig.getParameter<edm::InputTag>( "tracksSource" );
   doCalIso_      = iConfig.getParameter<bool>         ( "doCalIsolation" );
+  towerSrc_      = iConfig.getParameter<edm::InputTag>( "towerSource" );
+  // muon ID configurables
+  addMuonID_     = iConfig.getParameter<bool>         ( "addMuonID" );
+//  muonIDSrc_     = iConfig.getParameter<edm::InputTag>( "muonIDSource" );
   // likelihood ratio configurables
   addLRValues_   = iConfig.getParameter<bool>         ( "addLRValues" );
   muonLRFile_    = iConfig.getParameter<std::string>  ( "muonLRFile" );
 
   // construct resolution calculator
   if (addResolutions_) {
-    theResoCalc_ = new TopObjectResolutionCalc(muonResoFile_, useNNReso_);
+    theResoCalc_ = new TopObjectResolutionCalc(edm::FileInPath(muonResoFile_).fullPath(), useNNReso_);
   }
 
   // produces vector of muons
@@ -70,12 +76,25 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
   }
 
   // prepare isolation calculation
-  if (doTrkIso_) trkIsolation_ = new TopLeptonTrackerIsolationPt (iSetup);
-  if (doCalIso_) calIsolation_ = new TopLeptonCaloIsolationEnergy(iSetup);
+  edm::Handle<reco::TrackCollection> trackHandle;
+  if (doTrkIso_) {
+    trkIsolation_= new TrackerIsolationPt();
+    iEvent.getByLabel(tracksSrc_, trackHandle);
+  }
+  std::vector<CaloTower> towers;
+  if (doCalIso_) {
+    calIsolation_= new CaloIsolationEnergy();
+    edm::Handle<CaloTowerCollection> towerHandle;
+    iEvent.getByLabel(towerSrc_, towerHandle);
+    CaloTowerCollection towerColl = *(towerHandle.product());
+    for (CaloTowerCollection::const_iterator itTower = towerColl.begin(); itTower != towerColl.end(); itTower++) {
+      towers.push_back(*itTower);
+    }
+  }
 
   // prepare LR calculation
   if (addLRValues_) {
-    theLeptonLRCalc_ = new TopLeptonLRCalc(iSetup, "", muonLRFile_, "");
+    theLeptonLRCalc_ = new TopLeptonLRCalc(iSetup, "", edm::FileInPath(muonLRFile_).fullPath(), "");
   }
 
   // loop over muons
@@ -93,11 +112,15 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
     }
     // do tracker isolation
     if (doTrkIso_) {
-      aMuon.setTrackIso(trkIsolation_->calculate(aMuon, iEvent));
+      aMuon.setTrackIso(trkIsolation_->calculate(aMuon, *trackHandle));
     }
     // do calorimeter isolation
     if (doCalIso_) {
-      aMuon.setCaloIso(calIsolation_->calculate(aMuon, iEvent));
+      aMuon.setCaloIso(calIsolation_->calculate(aMuon, towers));
+    }
+    // add muon ID info
+    if (addMuonID_) {
+      aMuon.setLeptonID(0); // FIXME FIXME FIXME
     }
     // add lepton LR info
     if (addLRValues_) {

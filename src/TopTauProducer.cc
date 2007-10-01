@@ -2,12 +2,13 @@
 // Author:  Christophe Delaere
 // Created: Thu Jul  26 11:08:00 CEST 2007
 //
-// $Id: TopTauProducer.cc,v 1.1.2.1 2007/08/22 14:29:47 lowette Exp $
+// $Id: TopTauProducer.cc,v 1.6 2007/09/28 13:15:09 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopTauProducer.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ParameterSet/interface/FileInPath.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
 #include "PhysicsTools/Utilities/interface/DeltaR.h"
@@ -48,7 +49,7 @@ TopTauProducer::TopTauProducer(const edm::ParameterSet & iConfig) {
 
   // construct resolution calculator
   if (addResolutions_) {
-    theResoCalc_ = new TopObjectResolutionCalc(tauResoFile_,iConfig.getParameter<bool>("useNNresolution"));
+    theResoCalc_ = new TopObjectResolutionCalc(edm::FileInPath(tauResoFile_).fullPath(), iConfig.getParameter<bool>("useNNresolution"));
   }
 
   // produces vector of taus
@@ -79,7 +80,7 @@ void TopTauProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
 
   // prepare LR calculation if required
   if (addLRValues_) {
-    theLeptonLRCalc_ = new TopLeptonLRCalc(iSetup, "", tauLRFile_);
+    theLeptonLRCalc_ = new TopLeptonLRCalc(iSetup, "", "", edm::FileInPath(tauLRFile_).fullPath());
   }
 
   // loop over taus

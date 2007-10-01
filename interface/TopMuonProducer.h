@@ -1,5 +1,5 @@
 //
-// $Id: TopMuonProducer.h,v 1.10 2007/09/07 22:23:08 lowette Exp $
+// $Id: TopMuonProducer.h,v 1.5.2.3 2007/09/08 00:01:26 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopMuonProducer_h
@@ -14,7 +14,7 @@
    calculation of a lepton likelihood ratio
 
   \author   Jan Heyninck, Steven Lowette
-  \version  $Id: TopMuonProducer.h,v 1.10 2007/09/07 22:23:08 lowette Exp $
+  \version  $Id: TopMuonProducer.h,v 1.5.2.3 2007/09/08 00:01:26 lowette Exp $
 */
 
 
@@ -25,14 +25,14 @@
 
 #include "PhysicsTools/Utilities/interface/PtComparator.h"
 
-#include "AnalysisDataFormats/TopObjects/interface/TopLepton.h"
+#include "AnalysisDataFormats/TopObjects/interface/TopMuon.h"
 
 #include <string>
 
 
 class TopObjectResolutionCalc;
-class TopLeptonTrackerIsolationPt;
-class TopLeptonCaloIsolationEnergy;
+class TrackerIsolationPt;
+class CaloIsolationEnergy;
 class TopLeptonLRCalc;
 
 
@@ -63,15 +63,19 @@ class TopMuonProducer : public edm::EDProducer {
     bool          useNNReso_;
     std::string   muonResoFile_;
     bool          doTrkIso_;
+    edm::InputTag tracksSrc_;
     bool          doCalIso_;
+    edm::InputTag towerSrc_;
+    bool          addMuonID_;
+//    edm::InputTag muonIDSrc_;
     bool          addLRValues_;
     std::string   muonLRFile_;
     // tools
-    TopObjectResolutionCalc      * theResoCalc_;
-    TopLeptonTrackerIsolationPt  * trkIsolation_;
-    TopLeptonCaloIsolationEnergy * calIsolation_;
-    TopLeptonLRCalc              * theLeptonLRCalc_;
-    GreaterByPt<TopMuon>           pTComparator_;
+    TopObjectResolutionCalc * theResoCalc_;
+    TrackerIsolationPt      * trkIsolation_;
+    CaloIsolationEnergy     * calIsolation_;
+    TopLeptonLRCalc         * theLeptonLRCalc_;
+    GreaterByPt<TopMuon>      pTComparator_;
     // other
     std::vector<std::pair<const reco::Candidate *, TopMuonType *> > pairGenRecoMuonsVector_;
 

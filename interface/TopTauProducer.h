@@ -2,7 +2,7 @@
 // Author:  Christophe Delaere
 // Created: Thu Jul  26 10:34:00 CEST 2007
 //
-// $Id: TopTauProducer.h,v 1.1 2007/07/28 09:56:28 delaer Exp $
+// $Id: TopTauProducer.h,v 1.5 2007/09/28 13:17:37 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopTauProducer_h
@@ -17,7 +17,7 @@
    calculation of a lepton likelihood ratio
 
   \author   Christophe Delaere
-  \version  $Id: TopTauProducer.h,v 1.1 2007/07/28 09:56:28 delaer Exp $
+  \version  $Id: TopTauProducer.h,v 1.5 2007/09/28 13:17:37 lowette Exp $
 */
 
 
@@ -26,7 +26,7 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 #include "FWCore/ParameterSet/interface/InputTag.h"
 
-#include "AnalysisDataFormats/TopObjects/interface/TopLepton.h"
+#include "AnalysisDataFormats/TopObjects/interface/TopTau.h"
 #include "PhysicsTools/Utilities/interface/PtComparator.h"
 
 #include <string>

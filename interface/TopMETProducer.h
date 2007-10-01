@@ -2,7 +2,7 @@
 // Author:  Jan Heyninck, Steven Lowette
 // Created: Tue Apr  10 12:01:49 CEST 2007
 //
-// $Id: TopMETProducer.h,v 1.4 2007/06/23 07:29:15 lowette Exp $
+// $Id: TopMETProducer.h,v 1.4.2.1 2007/08/22 14:29:43 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopMETProducer_h
@@ -17,7 +17,7 @@
    correction for a given collection of muons.
 
   \author   Jan Heyninck, Steven Lowette
-  \version  $Id: TopMETProducer.h,v 1.4 2007/06/23 07:29:15 lowette Exp $
+  \version  $Id: TopMETProducer.h,v 1.4.2.1 2007/08/22 14:29:43 lowette Exp $
 */
 
 
@@ -53,7 +53,7 @@ class TopMETProducer : public edm::EDProducer {
     std::string   metResoFile_;
     edm::InputTag muonSrc_;
     // tools
-    TopObjectResolutionCalc *   metResoCalc_;
+    TopObjectResolutionCalc * metResoCalc_;
     GreaterByEt<TopMET> eTComparator_;
 
 };

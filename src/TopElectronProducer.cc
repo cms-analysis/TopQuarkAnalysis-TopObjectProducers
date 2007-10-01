@@ -1,18 +1,19 @@
 //
-// $Id: TopElectronProducer.cc,v 1.19 2007/09/07 22:23:07 lowette Exp $
+// $Id: TopElectronProducer.cc,v 1.23 2007/09/28 12:43:51 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopElectronProducer.h"
 
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
+#include "FWCore/ParameterSet/interface/FileInPath.h"
 
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
 #include "PhysicsTools/Utilities/interface/DeltaR.h"
 
 #include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonLRCalc.h"
 #include "TopQuarkAnalysis/TopObjectResolutions/interface/TopObjectResolutionCalc.h"
-#include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonTrackerIsolationPt.h"
-#include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonCaloIsolationEnergy.h"
+#include "TopQuarkAnalysis/TopLeptonSelection/interface/TrackerIsolationPt.h"
+#include "TopQuarkAnalysis/TopLeptonSelection/interface/CaloIsolationEnergy.h"
 
 #include <vector>
 #include <memory>
@@ -36,7 +37,9 @@ TopElectronProducer::TopElectronProducer(const edm::ParameterSet & iConfig) {
   electronResoFile_ = iConfig.getParameter<std::string>  ( "electronResoFile" );
   // isolation configurables
   doTrkIso_         = iConfig.getParameter<bool>         ( "doTrkIsolation" );
+  tracksSrc_        = iConfig.getParameter<edm::InputTag>( "tracksSource" );
   doCalIso_         = iConfig.getParameter<bool>         ( "doCalIsolation" );
+  towerSrc_         = iConfig.getParameter<edm::InputTag>( "towerSource" );
   // electron ID configurables
   addElecID_        = iConfig.getParameter<bool>         ( "addElectronID" );
   elecIDSrc_        = iConfig.getParameter<edm::InputTag>( "electronIDSource" );
@@ -46,7 +49,7 @@ TopElectronProducer::TopElectronProducer(const edm::ParameterSet & iConfig) {
 
   // construct resolution calculator
   if(addResolutions_){
-    theResoCalc_= new TopObjectResolutionCalc(electronResoFile_, useNNReso_);
+    theResoCalc_= new TopObjectResolutionCalc(edm::FileInPath(electronResoFile_).fullPath(), useNNReso_);
   }
 
   // produces vector of muons
@@ -80,8 +83,21 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
   }
 
   // prepare isolation calculation
-  if (doTrkIso_) trkIsolation_= new TopLeptonTrackerIsolationPt (iSetup);
-  if (doCalIso_) calIsolation_= new TopLeptonCaloIsolationEnergy(iSetup);
+  edm::Handle<reco::TrackCollection> trackHandle;
+  if (doTrkIso_) {
+    trkIsolation_= new TrackerIsolationPt();
+    iEvent.getByLabel(tracksSrc_, trackHandle);
+  }
+  std::vector<CaloTower> towers;
+  if (doCalIso_) {
+    calIsolation_= new CaloIsolationEnergy();
+    edm::Handle<CaloTowerCollection> towerHandle;
+    iEvent.getByLabel(towerSrc_, towerHandle);
+    CaloTowerCollection towerColl = *(towerHandle.product());
+    for (CaloTowerCollection::const_iterator itTower = towerColl.begin(); itTower != towerColl.end(); itTower++) {
+      towers.push_back(*itTower);
+    }
+  }
   
   // prepare ID extraction
   edm::Handle<reco::ElectronIDAssociationCollection> elecIDs;
@@ -89,7 +105,7 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
   
   // prepare LR calculation
   if(addLRValues_) {
-    theLeptonLRCalc_= new TopLeptonLRCalc(iSetup, electronLRFile_, "", "");
+    theLeptonLRCalc_= new TopLeptonLRCalc(iSetup, edm::FileInPath(electronLRFile_).fullPath(), "", "");
   }
 
   std::vector<TopElectron> * topElectrons = new std::vector<TopElectron>();
@@ -106,11 +122,11 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
     }
     // do tracker isolation
     if (doTrkIso_) {
-      anElectron.setTrackIso(trkIsolation_->calculate(anElectron, iEvent));
+      anElectron.setTrackIso(trkIsolation_->calculate(anElectron, *trackHandle));
     }
     // do calorimeter isolation
     if (doCalIso_) {
-      anElectron.setCaloIso(calIsolation_->calculate(anElectron, iEvent));
+      anElectron.setCaloIso(calIsolation_->calculate(anElectron, towers));
     }
     // add electron ID info
     if (addElecID_) {
@@ -214,7 +230,7 @@ void TopElectronProducer::matchTruth(const reco::CandidateCollection & particles
 double TopElectronProducer::electronID(const edm::Handle<std::vector<TopElectronType> > & elecs,
                                        const edm::Handle<reco::ElectronIDAssociationCollection> & elecIDs, int idx) {
   //find elecID for elec with index idx
-  edm::Ref<TopElectronTypeCollection> elecsRef( elecs, idx );
+  edm::Ref<std::vector<TopElectronType> > elecsRef( elecs, idx );
   reco::ElectronIDAssociationCollection::const_iterator elecID = elecIDs->find( elecsRef );
 
   //return corresponding elecID (only 
