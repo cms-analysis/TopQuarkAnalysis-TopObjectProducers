@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.cc,v 1.14.2.3 2007/10/01 21:11:39 lowette Exp $
+// $Id: TopJetProducer.cc,v 1.14.2.4 2007/10/02 16:55:23 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -30,7 +30,7 @@
 TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   // initialize the configurables
   caliJetsSrc_                   = iConfig.getParameter<edm::InputTag>    ( "caliJetSource" );
-  recJetsSrc_                    = iConfig.getParameter<edm::InputTag>    ( "recJetsource" );
+  recJetsSrc_                    = iConfig.getParameter<edm::InputTag>    ( "recJetSource" );
   // TEMP Jet cleaning from electrons
   doJetCleaning_                 = iConfig.getParameter<bool> 	          ( "doJetCleaning" );
   topElectronsLabel_             = iConfig.getParameter<edm::InputTag>    ( "topElectronsInput" );
