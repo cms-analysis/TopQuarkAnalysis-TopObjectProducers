@@ -2,7 +2,7 @@
 // Author:  Christophe Delaere
 // Created: Thu Jul  26 11:08:00 CEST 2007
 //
-// $Id: TopTauProducer.cc,v 1.6 2007/09/28 13:15:09 lowette Exp $
+// $Id$
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopTauProducer.h"
@@ -31,20 +31,21 @@ bool GreaterByPt<TopTau>::operator()( const TopTau & t1, const TopTau & t2 ) con
 
 TopTauProducer::TopTauProducer(const edm::ParameterSet & iConfig) {
   // initialize the configurables
-  tauSrc_           = iConfig.getParameter<edm::InputTag>("tauSource");
-  doGenMatch_       = iConfig.getParameter<bool>         ("doGenMatch");
-  addResolutions_   = iConfig.getParameter<bool>         ("addResolutions");
-  addLRValues_      = iConfig.getParameter<bool>         ("addLRValues");
-  genPartSrc_       = iConfig.getParameter<edm::InputTag>("genParticleSource");
-  tauResoFile_      = iConfig.getParameter<std::string>  ("tauResoFile");
-  tauLRFile_        = iConfig.getParameter<std::string>  ("tauLRFile");
-  redoDiscriminant_ = iConfig.getParameter<bool>         ("redoDiscriminant");
-  if(redoDiscriminant_) {
-    Rmatch_          = iConfig.getParameter<double>       ("Rmatch");
-    Rsig_            = iConfig.getParameter<double>       ("Rsig");
-    Riso_            = iConfig.getParameter<double>       ("Riso");
-    pT_LT_           = iConfig.getParameter<double>       ("pT_LT");
-    pT_min_          = iConfig.getParameter<double>       ("pT_min");
+  tauSrc_           = iConfig.getParameter<edm::InputTag>( "tauSource" );
+  addGenMatch_      = iConfig.getParameter<bool>         ( "addGenMatch" );
+  addResolutions_   = iConfig.getParameter<bool>         ( "addResolutions" );
+  useNNReso_        = iConfig.getParameter<bool>         ( "useNNResolutions" );
+  addLRValues_      = iConfig.getParameter<bool>         ( "addLRValues" );
+  genPartSrc_       = iConfig.getParameter<edm::InputTag>( "genParticleSource" );
+  tauResoFile_      = iConfig.getParameter<std::string>  ( "tauResoFile" );
+  tauLRFile_        = iConfig.getParameter<std::string>  ( "tauLRFile" );
+  redoDiscriminant_ = iConfig.getParameter<bool>         ( "redoDiscriminant" );
+  if (redoDiscriminant_) {
+    Rmatch_         = iConfig.getParameter<double>       ( "Rmatch" );
+    Rsig_           = iConfig.getParameter<double>       ( "Rsig" );
+    Riso_           = iConfig.getParameter<double>       ( "Riso" );
+    pT_LT_          = iConfig.getParameter<double>       ( "pT_LT" );
+    pT_min_         = iConfig.getParameter<double>       ( "pT_min" );
   }
 
   // construct resolution calculator
@@ -74,7 +75,7 @@ void TopTauProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
 
   // Get the vector of generated particles from the event if needed
   edm::Handle<reco::CandidateCollection> particles;
-  if (doGenMatch_) {
+  if (addGenMatch_) {
     iEvent.getByLabel(genPartSrc_, particles);
   }
 
@@ -93,7 +94,7 @@ void TopTauProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
     // construct the TopTau
     TopTau aTau(*tau);
     // match to generated final state taus
-    if (doGenMatch_) {
+    if (addGenMatch_) {
       // initialize best match as null
       reco::GenParticleCandidate bestGenTau(0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
       float bestDR = 0;

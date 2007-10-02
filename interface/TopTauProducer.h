@@ -2,7 +2,7 @@
 // Author:  Christophe Delaere
 // Created: Thu Jul  26 10:34:00 CEST 2007
 //
-// $Id: TopTauProducer.h,v 1.5 2007/09/28 13:17:37 lowette Exp $
+// $Id$
 //
 
 #ifndef TopObjectProducers_TopTauProducer_h
@@ -17,7 +17,7 @@
    calculation of a lepton likelihood ratio
 
   \author   Christophe Delaere
-  \version  $Id: TopTauProducer.h,v 1.5 2007/09/28 13:17:37 lowette Exp $
+  \version  $Id$
 */
 
 
@@ -48,19 +48,19 @@ class TopTauProducer : public edm::EDProducer {
 
     // configurables
     edm::InputTag  tauSrc_;
-    bool           doGenMatch_;
-    bool           addResolutions_;  
-    bool           addLRValues_;
-    bool           redoDiscriminant_;
-    double         Rmatch_,Rsig_,Riso_,pT_LT_,pT_min_;
+    bool           addGenMatch_;
     edm::InputTag  genPartSrc_;
+    bool           addResolutions_;
+    bool           useNNReso_;
     std::string    tauResoFile_;
+    bool           addLRValues_;
     std::string    tauLRFile_;
+    bool           redoDiscriminant_;
+    double         Rmatch_, Rsig_, Riso_, pT_LT_, pT_min_;
     // tools
-    TopObjectResolutionCalc *    theResoCalc_;
-    TopLeptonLRCalc *            theLeptonLRCalc_;
-    GreaterByPt<TopTau>          pTTauComparator_;
-
+    TopObjectResolutionCalc * theResoCalc_;
+    TopLeptonLRCalc *         theLeptonLRCalc_;
+    GreaterByPt<TopTau>       pTTauComparator_;
 };
 
 
