@@ -25,8 +25,10 @@ DEFINE_ANOTHER_FWK_MODULE(TopJetSelector);
 DEFINE_ANOTHER_FWK_MODULE(TopMETSelector);
 DEFINE_ANOTHER_FWK_MODULE(TopParticleSelector);
 
+#include "TopQuarkAnalysis/TopObjectProducers/interface/TopLeptonCountFilter.h"
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopObjectFilter.h"
 
+DEFINE_ANOTHER_FWK_MODULE(TopLeptonCountFilter);
 DEFINE_ANOTHER_FWK_MODULE(TopElectronCountFilter);
 DEFINE_ANOTHER_FWK_MODULE(TopMuonCountFilter);
 DEFINE_ANOTHER_FWK_MODULE(TopTauCountFilter);
