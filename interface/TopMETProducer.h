@@ -55,7 +55,7 @@ class TopMETProducer : public edm::EDProducer {
     edm::InputTag muonSrc_;
     // tools
     TopObjectResolutionCalc * metResoCalc_;
-    GreaterByEt<TopMET> eTComparator_;
+    EtInverseComparator<TopMET> eTComparator_;
 
 };
 

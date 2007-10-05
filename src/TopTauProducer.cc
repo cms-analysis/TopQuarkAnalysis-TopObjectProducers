@@ -21,7 +21,7 @@
 
 // specialization of the PtInverseComparator: TopTau is not (yet) a candidate.
 template<>
-bool GreaterByPt<TopTau>::operator()( const TopTau & t1, const TopTau & t2 ) const {
+bool PtInverseComparator<TopTau>::operator()( const TopTau & t1, const TopTau & t2 ) const {
   return t1.getJetTag()->jet().pt() > t2.getJetTag()->jet().pt();
 }
 

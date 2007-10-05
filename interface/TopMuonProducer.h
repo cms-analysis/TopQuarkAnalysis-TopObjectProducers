@@ -74,7 +74,7 @@ class TopMuonProducer : public edm::EDProducer {
     // tools
     TopObjectResolutionCalc * theResoCalc_;
     TopLeptonLRCalc         * theLeptonLRCalc_;
-    GreaterByPt<TopMuon>      pTComparator_;
+    PtInverseComparator<TopMuon> pTComparator_;
     // other
     std::vector<std::pair<const reco::Candidate *, TopMuonType *> > pairGenRecoMuonsVector_;
 

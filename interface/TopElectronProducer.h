@@ -1,5 +1,5 @@
 //
-// $Id: TopElectronProducer.h,v 1.17 2007/10/02 15:34:59 lowette Exp $
+// $Id: TopElectronProducer.h,v 1.9.2.6 2007/10/02 16:55:22 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopElectronProducer_h
@@ -14,7 +14,7 @@
    and calculation of a lepton likelihood ratio
 
   \author   Jan Heyninck, Steven Lowette
-  \version  $Id: TopElectronProducer.h,v 1.17 2007/10/02 15:34:59 lowette Exp $
+  \version  $Id: TopElectronProducer.h,v 1.9.2.6 2007/10/02 16:55:22 lowette Exp $
 */
 
 
@@ -82,7 +82,7 @@ class TopElectronProducer : public edm::EDProducer {
     TrackerIsolationPt           * trkIsolation_;
     CaloIsolationEnergy          * calIsolation_;
     TopLeptonLRCalc              * theLeptonLRCalc_;
-    GreaterByPt<TopElectron>       pTComparator_;
+    PtInverseComparator<TopElectron> pTComparator_;
     // other
     std::vector<std::pair<const reco::Candidate *, TopElectronType *> > pairGenRecoElectronsVector_;
 

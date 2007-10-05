@@ -89,7 +89,7 @@ class TopJetProducer : public edm::EDProducer {
     TopObjectResolutionCalc                * theResoCalc_;
     reco::helper::SimpleJetTrackAssociator   simpleJetTrackAssociator_;
     JetCharge                              * jetCharge_;
-    GreaterByEt<TopJet>                      eTComparator_;
+    EtInverseComparator<TopJet>                      eTComparator_;
 
 };
 

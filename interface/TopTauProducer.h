@@ -60,7 +60,7 @@ class TopTauProducer : public edm::EDProducer {
     // tools
     TopObjectResolutionCalc * theResoCalc_;
     TopLeptonLRCalc *         theLeptonLRCalc_;
-    GreaterByPt<TopTau>       pTTauComparator_;
+    PtInverseComparator<TopTau>       pTTauComparator_;
 };
 
 
