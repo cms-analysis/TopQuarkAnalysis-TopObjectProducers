@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.cc,v 1.14.2.4 2007/10/02 16:55:23 lowette Exp $
+// $Id: TopJetProducer.cc,v 1.14.2.5 2007/10/02 18:18:34 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -96,8 +96,8 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
   edm::Handle<std::vector<TopJetType> > recjets;
   iEvent.getByLabel(recJetsSrc_, recjets);
   // Get the vector of calibrated jets
-  edm::Handle<std::vector<TopJetType> > calijets;
-  iEvent.getByLabel(caliJetsSrc_, calijets);
+  edm::Handle<std::vector<TopJetType> > caljets;
+  iEvent.getByLabel(caliJetsSrc_, caljets);
   // TEMP Jet cleaning from electrons
   edm::Handle<std::vector<TopElectron> > electronsHandle;
   iEvent.getByLabel(topElectronsLabel_, electronsHandle);
@@ -145,7 +145,7 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
 
   // loop over jets
   std::vector<TopJet> * topJets = new std::vector<TopJet>(); 
-  for (size_t j = 0; j < recjets->size(); j++) {
+  for (size_t j = 0; j < caljets->size(); j++) {
  
     if (doJetCleaning_) {
     // TEMP Jet cleaning from electrons
@@ -154,7 +154,7 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
       //FIXME: don't do muons until have a sensible cut value on their isolation
       float mindr=9999.;
       for (size_t ie=0; ie<electrons.size(); ie++) {
-        float dr=DeltaR<reco::Candidate>()((*recjets)[j],electrons[ie]);
+        float dr=DeltaR<reco::Candidate>()((*caljets)[j],electrons[ie]);
         if (dr<mindr) {
           mindr=dr;
         }
@@ -167,139 +167,131 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
     }
 
     // construct the TopJet
-    TopJet ajet;
-    // loop over cal jets to find corresponding jet
-    bool cjFound = false;
-    for (size_t cj = 0; cj < calijets->size(); cj++) {
-      // FIXME: is this 0.01 matching fullproof?
-      if (DeltaR<reco::Candidate>()((*recjets)[j], (*calijets)[cj]) < 0.01) {
-        cjFound = true;
-        ajet = TopJet((*calijets)[cj]);
-        ajet.setRecJet((*recjets)[j]);
+    TopJet ajet((*caljets)[j]);
+    // loop over rec jets to find corresponding jet
+    for (size_t cj = 0; cj < recjets->size(); cj++) {
+      // Ugly matching, but there's no link between the collections
+      if (DeltaR<reco::Candidate>()((*caljets)[j], (*recjets)[cj]) < 0.001) {
+        ajet.setRecJet((*recjets)[cj]);
       }
     }
-    // if cal jet found... do all the rest
-    if (cjFound) {
 
-      // get the MC flavour information for this jet
-      if (getJetMCFlavour_) {
-        JetFlavour jetFlavour = jetFlavId_->identifyBasedOnPartons((*recjets)[j]);
-        ajet.setPartonFlavour(jetFlavour.flavour());
+    // get the MC flavour information for this jet
+    if (getJetMCFlavour_) {
+      JetFlavour jetFlavour = jetFlavId_->identifyBasedOnPartons((*caljets)[j]);
+      ajet.setPartonFlavour(jetFlavour.flavour());
+    }
+    // do the parton matching
+    if (addGenPartonMatch_) {
+      // initialize best match as null
+      reco::GenParticleCandidate bestParton(0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
+      float bestDR = 0;
+      // find the closest parton
+      for (reco::CandidateCollection::const_iterator itParton = particles->begin(); itParton != particles->end(); ++itParton) {
+        reco::GenParticleCandidate aParton = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&*itParton)));
+        if (aParton.status()==3 &&
+            (abs(aParton.pdgId())==1 || abs(aParton.pdgId())==2 || abs(aParton.pdgId())==3 || abs(aParton.pdgId())==4 || abs(aParton.pdgId())==5)) {
+          float currDR = DeltaR<reco::Candidate>()(aParton, ajet);
+          if (bestDR == 0 || currDR < bestDR) {
+            bestParton = aParton;
+            bestDR = currDR;
+          }
+        }
       }
-      // do the parton matching
-      if (addGenPartonMatch_) {
-        // initialize best match as null
-        reco::GenParticleCandidate bestParton(0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
-        float bestDR = 0;
-        // find the closest parton
-        for (reco::CandidateCollection::const_iterator itParton = particles->begin(); itParton != particles->end(); ++itParton) {
-          reco::GenParticleCandidate aParton = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&*itParton)));
-          if (aParton.status()==3 &&
-              (abs(aParton.pdgId())==1 || abs(aParton.pdgId())==2 || abs(aParton.pdgId())==3 || abs(aParton.pdgId())==4 || abs(aParton.pdgId())==5)) {
-            float currDR = DeltaR<reco::Candidate>()(aParton, ajet);
-            if (bestDR == 0 || currDR < bestDR) {
-              bestParton = aParton;
-              bestDR = currDR;
+      ajet.setGenParton(bestParton);
+    }
+    // do the GenJet matching
+    if (addGenJetMatch_) {
+      // initialize best match as null
+//NEED TO INITIALIZE TO ZERO
+      reco::GenJet bestGenJet;//0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
+      float bestDR = 0;
+      // find the closest parton
+      for (reco::GenJetCollection::const_iterator itGenJet = genJets->begin(); itGenJet != genJets->end(); ++itGenJet) {
+// do we need some criteria?      if (itGenJet->status()==3) {
+          float currDR = DeltaR<reco::Candidate>()(*itGenJet, ajet);
+          if (bestDR == 0 || currDR < bestDR) {
+            bestGenJet = *itGenJet;
+            bestDR = currDR;
+          }
+//          }
+      }
+      ajet.setGenJet(bestGenJet);
+    }
+    // TO BE IMPLEMENTED FOR >=1_5_X: do the PartonJet matching
+    if (addPartonJetMatch_) {
+    }
+    // add resolution info if demanded
+    if (addResolutions_) {
+      (*theResoCalc_)(ajet);
+    }
+
+    // add b-tag info if available & required
+    if (addBTagInfo_) {
+      for (size_t k=0; k<jetTags_testManyByType.size(); k++) {
+        edm::Handle<std::vector<reco::JetTag> > jetTags = jetTags_testManyByType[k];
+
+        //**************************
+        //get label and module names
+        std::string moduleTagInfoName = (jetTags).provenance()->moduleName();	 
+        std::string moduleLabel = (jetTags).provenance()->moduleLabel();
+        //********ignore taggers from AOD*********
+        if(  (moduleLabel == "trackCountingJetTags"    && ignoreTrackCountingFromAOD_    == true ) ) continue;
+        if(  (moduleLabel == "trackProbabilityJetTags" && ignoreTrackProbabilityFromAOD_ == true ) ) continue;
+        if(  (moduleLabel == "softMuonJetTags"         && ignoreSoftMuonFromAOD_         == true ) ) continue;
+        if(  (moduleLabel == "softElectronJetTags    " && ignoreSoftElectronFromAOD_     == true ) ) continue;
+
+        for (size_t t = 0; t < jetTags->size(); t++) {
+          // cout << "jet test " << ajet.getLCalJet().et() << "   " << (*jetTags)[t].jet().et()  << endl;
+          //cout << "deltaR   " << DeltaR<reco::Candidate>()((*caljets)[j], (*jetTags)[t].jet()) << endl;
+
+          // FIXME: is this 0.0001 matching fullproof?
+          if (DeltaR<reco::Candidate>()((*caljets)[j], (*jetTags)[t].jet()) < 0.00001) {
+
+            //FIXME add combined tagger
+            //********store discriminators*********
+            if(addDiscriminators_ == true){
+              std::pair<std::string, double> pairDiscri;
+              pairDiscri.first = moduleLabel;
+              pairDiscri.second = (*jetTags)[t].discriminator();
+              //drop TauTag!!!
+              if(moduleTagInfoName == "TrackProbability" || moduleTagInfoName == "TrackCounting" || moduleTagInfoName == "SoftLepton" ){
+	        ajet.addBDiscriminatorPair(pairDiscri);
+              }
+            }
+
+            //FIXME add combined tagger
+            //********store jetTagRef*********
+            if(addJetTagRefs_ == true){
+
+              std::pair<std::string, reco::JetTagRef> pairjettagref;
+              pairjettagref.first = moduleLabel;
+
+              if(moduleTagInfoName == "TrackProbability"){
+                //cout << "string module label " << moduleLabel << endl;
+                iEvent.getByLabel(moduleLabel,jetsInfoHandleTP);  
+                const  reco::TrackProbabilityTagInfoCollection & tagInfo_prob = *(jetsInfoHandleTP);
+                pairjettagref.second = tagInfo_prob[t].getJetTag();
+                ajet.addBJetTagRefPair(pairjettagref);
+              }
+              if(moduleTagInfoName == "TrackCounting"){
+                //cout << "string module label " << moduleLabel << endl;
+                iEvent.getByLabel(moduleLabel,jetsInfoHandleTC);  
+                const  reco::TrackCountingTagInfoCollection & tagInfo_prob = *(jetsInfoHandleTC);
+                pairjettagref.second = tagInfo_prob[t].getJetTag();
+                ajet.addBJetTagRefPair(pairjettagref);
+              }  
+              if(moduleTagInfoName == "SoftLepton"){
+                // cout << "string module label " << moduleLabel << endl;
+                iEvent.getByLabel(moduleLabel,jetsInfoHandle_sl);  
+                const  reco::SoftLeptonTagInfoCollection & tagInfo_prob = *(jetsInfoHandle_sl);
+                pairjettagref.second = tagInfo_prob[t].getJetTag();
+                ajet.addBJetTagRefPair(pairjettagref);
+              }
             }
           }
         }
-        ajet.setGenParton(bestParton);
       }
-      // do the GenJet matching
-      if (addGenJetMatch_) {
-        // initialize best match as null
-//NEED TO INITIALIZE TO ZERO
-        reco::GenJet bestGenJet;//0, reco::Particle::LorentzVector(0, 0, 0, 0), reco::Particle::Point(0,0,0), 0, 0);
-        float bestDR = 0;
-        // find the closest parton
-        for (reco::GenJetCollection::const_iterator itGenJet = genJets->begin(); itGenJet != genJets->end(); ++itGenJet) {
-// do we need some criteria?      if (itGenJet->status()==3) {
-            float currDR = DeltaR<reco::Candidate>()(*itGenJet, ajet);
-            if (bestDR == 0 || currDR < bestDR) {
-              bestGenJet = *itGenJet;
-              bestDR = currDR;
-            }
-//          }
-        }
-        ajet.setGenJet(bestGenJet);
-      }
-      // TO BE IMPLEMENTED FOR >=1_5_X: do the PartonJet matching
-      if (addPartonJetMatch_) {
-      }
-      // add resolution info if demanded
-      if (addResolutions_) {
-        (*theResoCalc_)(ajet);
-      }
-
-      // add b-tag info if available & required
-      if (addBTagInfo_) {
-        for (size_t k=0; k<jetTags_testManyByType.size(); k++) {
-          edm::Handle<std::vector<reco::JetTag> > jetTags = jetTags_testManyByType[k];
-
-	  //**************************
-	  //get label and module names
-	  std::string moduleTagInfoName = (jetTags).provenance()->moduleName();	 
-	  std::string moduleLabel = (jetTags).provenance()->moduleLabel();
-	  //********ignore taggers from AOD*********
-	  if(  (moduleLabel == "trackCountingJetTags"    && ignoreTrackCountingFromAOD_    == true ) ) continue;
-	  if(  (moduleLabel == "trackProbabilityJetTags" && ignoreTrackProbabilityFromAOD_ == true ) ) continue;
-	  if(  (moduleLabel == "softMuonJetTags"         && ignoreSoftMuonFromAOD_         == true ) ) continue;
-	  if(  (moduleLabel == "softElectronJetTags    " && ignoreSoftElectronFromAOD_     == true ) ) continue;
-	
-	  for (size_t t = 0; t < jetTags->size(); t++) {
-	    // cout << "jet test " << ajet.getLCalJet().et() << "   " << (*jetTags)[t].jet().et()  << endl;
-	    //cout << "deltaR   " <<  DeltaR<reco::Candidate>()((*recjets)[j], (*jetTags)[t].jet()) << endl;
-
-	    // FIXME: is this 0.0001 matching fullproof?
-	    if (DeltaR<reco::Candidate>()((*recjets)[j], (*jetTags)[t].jet()) < 0.00001) {
-	    
-	      //FIXME add combined tagger
-	      //********store discriminators*********
-	      if(addDiscriminators_ == true){
-	        std::pair<std::string, double> pairDiscri;
-	        pairDiscri.first = moduleLabel;
-	        pairDiscri.second = (*jetTags)[t].discriminator();
-	        //drop TauTag!!!
-	        if(moduleTagInfoName == "TrackProbability" || moduleTagInfoName == "TrackCounting" || moduleTagInfoName == "SoftLepton" ){
-		  ajet.addBDiscriminatorPair(pairDiscri);
-	        }
-	      }
-	    
-	      //FIXME add combined tagger
-	      //********store jetTagRef*********
-	      if(addJetTagRefs_ == true){
-	      
-	        std::pair<std::string, reco::JetTagRef> pairjettagref;
-	        pairjettagref.first = moduleLabel;
-	      
-	        if(moduleTagInfoName == "TrackProbability"){
-		  //cout << "string module label " << moduleLabel << endl;
-		  iEvent.getByLabel(moduleLabel,jetsInfoHandleTP);  
-		  const  reco::TrackProbabilityTagInfoCollection & tagInfo_prob = *(jetsInfoHandleTP);
-		  pairjettagref.second = tagInfo_prob[t].getJetTag();
-		  ajet.addBJetTagRefPair(pairjettagref);
-	        }
-	        if(moduleTagInfoName == "TrackCounting"){
-		  //cout << "string module label " << moduleLabel << endl;
-		  iEvent.getByLabel(moduleLabel,jetsInfoHandleTC);  
-		  const  reco::TrackCountingTagInfoCollection & tagInfo_prob = *(jetsInfoHandleTC);
-		  pairjettagref.second = tagInfo_prob[t].getJetTag();
-		  ajet.addBJetTagRefPair(pairjettagref);
-	        }  
-	        if(moduleTagInfoName == "SoftLepton"){
-		  // cout << "string module label " << moduleLabel << endl;
-		  iEvent.getByLabel(moduleLabel,jetsInfoHandle_sl);  
-		  const  reco::SoftLeptonTagInfoCollection & tagInfo_prob = *(jetsInfoHandle_sl);
-		  pairjettagref.second = tagInfo_prob[t].getJetTag();
-		  ajet.addBJetTagRefPair(pairjettagref);
-	        }
-	      }  
-	    }
-	  }
-	}
-      }
-    } else {
-      std::cout << "no cal jet found " << std::endl;
     }
 
     // Associate tracks with jet (at least temporary)
