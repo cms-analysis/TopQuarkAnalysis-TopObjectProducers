@@ -1,5 +1,5 @@
 //
-// $Id$
+// $Id: TopMuonProducer.cc,v 1.7.2.5 2007/10/02 16:55:23 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopMuonProducer.h"
@@ -14,6 +14,8 @@
 #include "TopQuarkAnalysis/TopLeptonSelection/interface/TrackerIsolationPt.h"
 #include "TopQuarkAnalysis/TopLeptonSelection/interface/CaloIsolationEnergy.h"
 #include "TopQuarkAnalysis/TopLeptonSelection/interface/TopLeptonLRCalc.h"
+
+#include "TMath.h"
 
 #include <vector>
 #include <memory>
@@ -43,6 +45,7 @@ TopMuonProducer::TopMuonProducer(const edm::ParameterSet & iConfig) {
 //  muonIDSrc_     = iConfig.getParameter<edm::InputTag>( "muonIDSource" );
   // likelihood ratio configurables
   addLRValues_   = iConfig.getParameter<bool>         ( "addLRValues" );
+  tracksSrc_     = iConfig.getParameter<edm::InputTag>( "tracksSource" );
   muonLRFile_    = iConfig.getParameter<std::string>  ( "muonLRFile" );
 
   // construct resolution calculator
@@ -120,11 +123,11 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
     }
     // add muon ID info
     if (addMuonID_) {
-      aMuon.setLeptonID(0); // FIXME FIXME FIXME
+      aMuon.setLeptonID((double) TMath::Prob((Double_t) muons[m].combinedMuon()->chi2(), (Int_t) muons[m].combinedMuon()->ndof()));
     }
     // add lepton LR info
     if (addLRValues_) {
-      theLeptonLRCalc_->calcLikelihood(aMuon, iEvent);
+      theLeptonLRCalc_->calcLikelihood(aMuon, trackHandle, iEvent);
     }
     // add sel to selected
     topMuons->push_back(TopMuon(aMuon));
