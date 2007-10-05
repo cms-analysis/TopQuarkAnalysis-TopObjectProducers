@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.cc,v 1.14.2.5 2007/10/02 18:18:34 lowette Exp $
+// $Id: TopJetProducer.cc,v 1.14.2.6 2007/10/05 09:24:18 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -60,8 +60,8 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
 
   // TEMP Jet cleaning from electrons
   LEPJETDR_=0.3;//deltaR cut used to associate a jet to an electron for jet cleaning.  Make it configurable?
-  ELEISOCUT_=0.1;//cut on electron isolation for jet cleaning
-  MUISOCUT_=0.1;//cut on muon isolation for jet cleaning
+  ELEISOCUT_=2.0;//cut on electron isolation for jet cleaning
+  MUISOCUT_=2.0;//cut on muon isolation for jet cleaning
   // TEMP End
     
   // construct the jet flavour identifier
