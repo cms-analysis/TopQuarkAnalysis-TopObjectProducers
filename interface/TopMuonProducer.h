@@ -1,5 +1,5 @@
 //
-// $Id$
+// $Id: TopMuonProducer.h,v 1.5.2.5 2007/10/02 16:55:22 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopMuonProducer_h
@@ -14,7 +14,7 @@
    calculation of a lepton likelihood ratio
 
   \author   Jan Heyninck, Steven Lowette
-  \version  $Id$
+  \version  $Id: TopMuonProducer.h,v 1.5.2.5 2007/10/02 16:55:22 lowette Exp $
 */
 
 
