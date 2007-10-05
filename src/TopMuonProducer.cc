@@ -1,5 +1,5 @@
 //
-// $Id: TopMuonProducer.cc,v 1.7.2.5 2007/10/02 16:55:23 lowette Exp $
+// $Id$
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopMuonProducer.h"
@@ -9,6 +9,10 @@
 
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
 #include "PhysicsTools/Utilities/interface/DeltaR.h"
+#include "DataFormats/TrackReco/interface/Track.h"
+#include "DataFormats/MuonReco/interface/MuIsoDeposit.h"
+#include "DataFormats/MuonReco/interface/Muon.h"
+#include "DataFormats/MuonReco/interface/MuonFwd.h"
 
 #include "TopQuarkAnalysis/TopObjectResolutions/interface/TopObjectResolutionCalc.h"
 #include "TopQuarkAnalysis/TopLeptonSelection/interface/TrackerIsolationPt.h"
@@ -37,12 +41,13 @@ TopMuonProducer::TopMuonProducer(const edm::ParameterSet & iConfig) {
   muonResoFile_  = iConfig.getParameter<std::string>  ( "muonResoFile" );
   // isolation configurables
   doTrkIso_      = iConfig.getParameter<bool>         ( "doTrkIsolation" );
-  tracksSrc_     = iConfig.getParameter<edm::InputTag>( "tracksSource" );
   doCalIso_      = iConfig.getParameter<bool>         ( "doCalIsolation" );
-  towerSrc_      = iConfig.getParameter<edm::InputTag>( "towerSource" );
+  trackIsoSrc_   = iConfig.getParameter<edm::InputTag>( "trackIsoSource" );
+  ecalIsoSrc_    = iConfig.getParameter<edm::InputTag>( "ecalIsoSource" );
+  hcalIsoSrc_    = iConfig.getParameter<edm::InputTag>( "hcalIsoSource" );
+  hocalIsoSrc_   = iConfig.getParameter<edm::InputTag>( "hocalIsoSource" );
   // muon ID configurables
   addMuonID_     = iConfig.getParameter<bool>         ( "addMuonID" );
-//  muonIDSrc_     = iConfig.getParameter<edm::InputTag>( "muonIDSource" );
   // likelihood ratio configurables
   addLRValues_   = iConfig.getParameter<bool>         ( "addLRValues" );
   tracksSrc_     = iConfig.getParameter<edm::InputTag>( "tracksSource" );
@@ -79,24 +84,23 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
   }
 
   // prepare isolation calculation
-  edm::Handle<reco::TrackCollection> trackHandle;
+  edm::Handle<reco::MuIsoDepositAssociationMap> trackerIso;
   if (doTrkIso_) {
-    trkIsolation_= new TrackerIsolationPt();
-    iEvent.getByLabel(tracksSrc_, trackHandle);
+    iEvent.getByLabel(trackIsoSrc_, trackerIso);
   }
-  std::vector<CaloTower> towers;
+  edm::Handle<reco::MuIsoDepositAssociationMap> ecalIso;
+  edm::Handle<reco::MuIsoDepositAssociationMap> hcalIso;
+  edm::Handle<reco::MuIsoDepositAssociationMap> hocalIso;
   if (doCalIso_) {
-    calIsolation_= new CaloIsolationEnergy();
-    edm::Handle<CaloTowerCollection> towerHandle;
-    iEvent.getByLabel(towerSrc_, towerHandle);
-    CaloTowerCollection towerColl = *(towerHandle.product());
-    for (CaloTowerCollection::const_iterator itTower = towerColl.begin(); itTower != towerColl.end(); itTower++) {
-      towers.push_back(*itTower);
-    }
+    iEvent.getByLabel(ecalIsoSrc_, ecalIso);
+    iEvent.getByLabel(hcalIsoSrc_, hcalIso);
+    iEvent.getByLabel(hocalIsoSrc_, hocalIso);
   }
 
   // prepare LR calculation
+  edm::Handle<reco::TrackCollection> trackHandle;
   if (addLRValues_) {
+    iEvent.getByLabel(tracksSrc_, trackHandle);
     theLeptonLRCalc_ = new TopLeptonLRCalc(iSetup, "", edm::FileInPath(muonLRFile_).fullPath(), "");
   }
 
@@ -115,11 +119,18 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
     }
     // do tracker isolation
     if (doTrkIso_) {
-      aMuon.setTrackIso(trkIsolation_->calculate(aMuon, *trackHandle));
+      const reco::MuIsoDeposit & depTracker = (*trackerIso)[muons[m].combinedMuon()];
+      // cone hardcoded, corresponds to default in recent CMSSW versions
+      std::pair<double, int> sumPtAndNTracks03 = depTracker.depositAndCountWithin(0.3);
+      aMuon.setTrackIso(sumPtAndNTracks03.first);
     }
     // do calorimeter isolation
     if (doCalIso_) {
-      aMuon.setCaloIso(calIsolation_->calculate(aMuon, towers));
+      const reco::MuIsoDeposit & depEcal = (*ecalIso)[muons[m].combinedMuon()];
+      const reco::MuIsoDeposit & depHcal = (*hcalIso)[muons[m].combinedMuon()];
+      const reco::MuIsoDeposit & depHOcal = (*hocalIso)[muons[m].combinedMuon()];
+      // cone hardcoded, corresponds to default in recent CMSSW versions
+      aMuon.setCaloIso(depEcal.depositWithin(0.3)+depHcal.depositWithin(0.3)+depHOcal.depositWithin(0.3));
     }
     // add muon ID info
     if (addMuonID_) {
@@ -140,8 +151,6 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
   std::auto_ptr<std::vector<TopMuon> > ptr(topMuons);
   iEvent.put(ptr);
 
-  if (doTrkIso_ ) delete trkIsolation_;
-  if (doCalIso_ ) delete calIsolation_;
   if (addLRValues_) delete theLeptonLRCalc_;
 
 }
