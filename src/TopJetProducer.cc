@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.cc,v 1.14.2.6 2007/10/05 09:24:18 lowette Exp $
+// $Id$
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -190,9 +190,14 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
       for (reco::CandidateCollection::const_iterator itParton = particles->begin(); itParton != particles->end(); ++itParton) {
         reco::GenParticleCandidate aParton = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&*itParton)));
         if (aParton.status()==3 &&
-            (abs(aParton.pdgId())==1 || abs(aParton.pdgId())==2 || abs(aParton.pdgId())==3 || abs(aParton.pdgId())==4 || abs(aParton.pdgId())==5)) {
+            (abs(aParton.pdgId())==1 || abs(aParton.pdgId())==2 ||
+             abs(aParton.pdgId())==3 || abs(aParton.pdgId())==4 ||
+             abs(aParton.pdgId())==5 || abs(aParton.pdgId())==21)) {
           float currDR = DeltaR<reco::Candidate>()(aParton, ajet);
-          if (bestDR == 0 || currDR < bestDR) {
+          // matching with hard-cut at 0.4
+          // can be improved a la muon-electron, such that each parton
+          // maximally matches 1 jet, but this requires two loops
+          if (bestDR == 0 || (currDR < bestDR || currDR < 0.4)) {
             bestParton = aParton;
             bestDR = currDR;
           }
@@ -210,7 +215,10 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
       for (reco::GenJetCollection::const_iterator itGenJet = genJets->begin(); itGenJet != genJets->end(); ++itGenJet) {
 // do we need some criteria?      if (itGenJet->status()==3) {
           float currDR = DeltaR<reco::Candidate>()(*itGenJet, ajet);
-          if (bestDR == 0 || currDR < bestDR) {
+          // matching with hard-cut at 0.4
+          // can be improved a la muon-electron, such that each genjet
+          // maximally matches 1 jet, but this requires two loops
+          if (bestDR == 0 || (currDR < bestDR || currDR < 0.4)) {
             bestGenJet = *itGenJet;
             bestDR = currDR;
           }
