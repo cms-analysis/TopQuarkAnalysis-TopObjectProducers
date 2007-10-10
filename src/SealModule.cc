@@ -35,3 +35,15 @@ DEFINE_ANOTHER_FWK_MODULE(TopTauCountFilter);
 DEFINE_ANOTHER_FWK_MODULE(TopJetCountFilter);
 DEFINE_ANOTHER_FWK_MODULE(TopMETCountFilter);
 DEFINE_ANOTHER_FWK_MODULE(TopParticleCountFilter);
+
+#include "TopQuarkAnalysis/TopObjectProducers/interface/TopObjectEnergyScale.h"
+
+typedef TopObjectEnergyScale<TopElectron> TopElectronEnergyScale;
+typedef TopObjectEnergyScale<TopMuon>     TopMuonEnergyScale;
+typedef TopObjectEnergyScale<TopJet>      TopJetEnergyScale;
+typedef TopObjectEnergyScale<TopMET>      TopMETEnergyScale;
+
+DEFINE_ANOTHER_FWK_MODULE(TopElectronEnergyScale);
+DEFINE_ANOTHER_FWK_MODULE(TopMuonEnergyScale);
+DEFINE_ANOTHER_FWK_MODULE(TopJetEnergyScale);
+DEFINE_ANOTHER_FWK_MODULE(TopMETEnergyScale);
