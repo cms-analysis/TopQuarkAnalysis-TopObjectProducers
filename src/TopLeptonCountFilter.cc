@@ -1,5 +1,5 @@
 //
-// $Id$
+// $Id: TopLeptonCountFilter.cc,v 1.1.2.3 2007/10/07 15:55:42 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopLeptonCountFilter.h"
@@ -37,5 +37,5 @@ bool TopLeptonCountFilter::filter(edm::Event & iEvent, const edm::EventSetup & i
   nrLeptons += (countElectrons_ ? electrons->size() : 0);
   nrLeptons += (countMuons_     ? muons->size()     : 0);
   nrLeptons += (countTaus_      ? taus->size()      : 0);
-  return nrLeptons > minNumber_;
+  return nrLeptons >= minNumber_;
 }
