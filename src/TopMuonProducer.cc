@@ -1,5 +1,5 @@
 //
-// $Id: TopMuonProducer.cc,v 1.18 2007/10/04 23:30:55 lowette Exp $
+// $Id: TopMuonProducer.cc,v 1.21 2007/10/20 11:37:16 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopMuonProducer.h"
@@ -83,15 +83,19 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
   // prepare isolation calculation
   edm::Handle<reco::MuIsoDepositAssociationMap> trackerIso;
   if (doTrkIso_) {
-    iEvent.getByLabel(trackIsoSrc_, trackerIso);
+    if (hocalIsoSrc_.label() == "famos") { // switch off for full sim, since we switched back to using muon-obj embedded info
+      iEvent.getByLabel(trackIsoSrc_, trackerIso);
+    }
   }
   edm::Handle<reco::MuIsoDepositAssociationMap> ecalIso;
   edm::Handle<reco::MuIsoDepositAssociationMap> hcalIso;
   edm::Handle<reco::MuIsoDepositAssociationMap> hocalIso;
   if (doCalIso_) {
-    iEvent.getByLabel(ecalIsoSrc_, ecalIso);
-    iEvent.getByLabel(hcalIsoSrc_, hcalIso);
-    iEvent.getByLabel(hocalIsoSrc_, hocalIso);
+    if (hocalIsoSrc_.label() == "famos") { // switch off for full sim, since we switched back to using muon-obj embedded info
+      iEvent.getByLabel(ecalIsoSrc_, ecalIso);
+      iEvent.getByLabel(hcalIsoSrc_, hcalIso);
+      if (hocalIsoSrc_.label() != "famos") iEvent.getByLabel(hocalIsoSrc_, hocalIso);
+    }
   }
 
   // prepare LR calculation
@@ -116,18 +120,38 @@ void TopMuonProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetu
     }
     // do tracker isolation
     if (doTrkIso_) {
-      const reco::MuIsoDeposit & depTracker = (*trackerIso)[muons[m].combinedMuon()];
-      // cone hardcoded, corresponds to default in recent CMSSW versions
-      std::pair<double, int> sumPtAndNTracks03 = depTracker.depositAndCountWithin(0.3);
+      std::pair<double, int> sumPtAndNTracks03;
+      if (hocalIsoSrc_.label() != "famos") {
+        // use the muon embedded muon isolation
+        sumPtAndNTracks03.first = aMuon.getIsolationR03().sumPt;
+        // use the muon isolation from the isolation maps (not yet stored in the 152 reco samples)
+        //const reco::MuIsoDeposit & depTracker = (*trackerIso)[muons[m].combinedMuon()];
+        //// cone hardcoded, corresponds to default in recent CMSSW versions
+        //sumPtAndNTracks03 = depTracker.depositAndCountWithin(0.3);
+      } else {
+        const reco::MuIsoDeposit & depTracker = (*trackerIso)[muons[m].track()];
+        // cone hardcoded, corresponds to default in recent CMSSW versions
+        sumPtAndNTracks03 = depTracker.depositAndCountWithin(0.3);
+      }
       aMuon.setTrackIso(sumPtAndNTracks03.first);
     }
     // do calorimeter isolation
     if (doCalIso_) {
-      const reco::MuIsoDeposit & depEcal = (*ecalIso)[muons[m].combinedMuon()];
-      const reco::MuIsoDeposit & depHcal = (*hcalIso)[muons[m].combinedMuon()];
-      const reco::MuIsoDeposit & depHOcal = (*hocalIso)[muons[m].combinedMuon()];
-      // cone hardcoded, corresponds to default in recent CMSSW versions
-      aMuon.setCaloIso(depEcal.depositWithin(0.3)+depHcal.depositWithin(0.3)+depHOcal.depositWithin(0.3));
+      if (hocalIsoSrc_.label() != "famos") {
+        // use the muon embedded muon isolation
+        aMuon.setCaloIso(aMuon.getIsolationR03().emEt + aMuon.getIsolationR03().hadEt + aMuon.getIsolationR03().hoEt);
+        // use the muon isolation from the isolation maps (not yet stored in the 152 reco samples)
+        //const reco::MuIsoDeposit & depEcal = (*ecalIso)[muons[m].combinedMuon()];
+        //const reco::MuIsoDeposit & depHcal = (*hcalIso)[muons[m].combinedMuon()];
+        //const reco::MuIsoDeposit & depHOcal = (*hocalIso)[muons[m].combinedMuon()];
+        //// cone hardcoded, corresponds to default in recent CMSSW versions
+        //aMuon.setCaloIso(depEcal.depositWithin(0.3)+depHcal.depositWithin(0.3)+depHOcal.depositWithin(0.3));
+      } else {
+        const reco::MuIsoDeposit & depEcal = (*ecalIso)[muons[m].track()];
+        const reco::MuIsoDeposit & depHcal = (*hcalIso)[muons[m].track()];
+        // cone hardcoded, corresponds to default in recent CMSSW versions
+        aMuon.setCaloIso(depEcal.depositWithin(0.3)+depHcal.depositWithin(0.3));
+      }
     }
     // add muon ID info
     if (addMuonID_) {
