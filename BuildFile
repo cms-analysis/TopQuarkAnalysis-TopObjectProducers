@@ -9,6 +9,7 @@
 <use name=RecoBTag/MCTools>
 <use name=RecoMuon/MuonIdentification>
 <use name=AnalysisDataFormats/Egamma>
+<use name=JetMETCorrections/Objects>
 
 <flags EDM_PLUGIN=1>
 <export>
@@ -23,4 +24,5 @@
   <use name=DataFormats/Math>
   <use name=RecoMuon/MuonIdentification>
   <use name=AnalysisDataFormats/Egamma>
+  <use name=JetMETCorrections/Objects>
 </export>
