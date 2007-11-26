@@ -22,7 +22,7 @@
 //
 // Original Author:  James LAMB
 //         Created:  Thu Oct 25 17:44:42 CEST 2007
-// $Id: TQAFLayer1Validation.cc,v 1.1 2007/10/30 18:30:18 jlamb Exp $
+// $Id: TQAFLayer1Validation.cc,v 1.2 2007/11/26 08:46:16 jlamb Exp $
 //
 //
 
@@ -192,7 +192,7 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByLabel("corMetType1Icone5",corrCaloMETHandle);
   reco::CaloMET corrCaloMET=(*corrCaloMETHandle).at(0);
   Handle<std::vector<TopJet> > jetsHandle;
-  iEvent.getByLabel("allLayer1TopLJets",jetsHandle);
+  iEvent.getByLabel("allLayer1TopJets",jetsHandle);
   /* end get the necessary event data*/
   
 
