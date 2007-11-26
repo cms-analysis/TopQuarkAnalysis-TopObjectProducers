@@ -53,8 +53,7 @@ class TopJetProducer : public edm::EDProducer {
     // TEMP End
 
     // configurables
-    edm::InputTag     caliJetsSrc_;
-    edm::InputTag     recJetsSrc_;
+    edm::InputTag     jetsSrc_;
     // TEMP Jet cleaning from electrons
     bool              doJetCleaning_;
     edm::InputTag     topElectronsLabel_;
@@ -73,6 +72,7 @@ class TopJetProducer : public edm::EDProducer {
     bool              addResolutions_;
     bool              useNNReso_;
     std::string       caliJetResoFile_;
+    std::string       caliBJetResoFile_;
     bool              addBTagInfo_;
     bool              ignoreTrackCountingFromAOD_;
     bool              ignoreTrackProbabilityFromAOD_;
@@ -87,6 +87,7 @@ class TopJetProducer : public edm::EDProducer {
     // tools
     JetFlavourIdentifier                   * jetFlavId_;
     TopObjectResolutionCalc                * theResoCalc_;
+    TopObjectResolutionCalc                * theBResoCalc_;
     reco::helper::SimpleJetTrackAssociator   simpleJetTrackAssociator_;
     JetCharge                              * jetCharge_;
     EtInverseComparator<TopJet>                      eTComparator_;

@@ -6,6 +6,7 @@
 <use name=PhysicsTools/JetCharge>
 <use name=PhysicsTools/Parser>
 <use name=RecoBTag/MCTools>
+<use name=JetMETCorrections/Objects>
 <flags SEAL_PLUGIN_NAME="TopQuarkAnalysisTopObjectProducers">
 
 <export>
@@ -17,4 +18,5 @@
   <use name=RecoBTag/MCTools>
   <use name=DataFormats/TrackReco>
   <use name=DataFormats/Math>
+  <use name=JetMETCorrections/Objects>
 </export>
