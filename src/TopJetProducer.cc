@@ -1,5 +1,5 @@
 //
-// $Id$
+// $Id: TopJetProducer.cc,v 1.14.2.8 2007/10/10 02:38:23 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -7,6 +7,7 @@
 #include "FWCore/MessageLogger/interface/MessageLogger.h"
 #include "FWCore/ParameterSet/interface/FileInPath.h"
 
+#include "JetMETCorrections/Objects/interface/JetCorrector.h"
 #include "DataFormats/BTauReco/interface/JetTag.h"
 #include "DataFormats/BTauReco/interface/TrackProbabilityTagInfo.h"
 #include "DataFormats/BTauReco/interface/TrackProbabilityTagInfoFwd.h"
@@ -29,8 +30,7 @@
 
 TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   // initialize the configurables
-  caliJetsSrc_                   = iConfig.getParameter<edm::InputTag>    ( "caliJetSource" );
-  recJetsSrc_                    = iConfig.getParameter<edm::InputTag>    ( "recJetSource" );
+  jetsSrc_                 = iConfig.getParameter<edm::InputTag>            ( "jetSource" );
   // TEMP Jet cleaning from electrons
   doJetCleaning_                 = iConfig.getParameter<bool> 	          ( "doJetCleaning" );
   topElectronsLabel_             = iConfig.getParameter<edm::InputTag>    ( "topElectronsInput" );
@@ -46,6 +46,7 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   addResolutions_                = iConfig.getParameter<bool>             ( "addResolutions" );
   useNNReso_                     = iConfig.getParameter<bool>             ( "useNNResolutions" );
   caliJetResoFile_               = iConfig.getParameter<std::string>      ( "caliJetResoFile" );
+  caliBJetResoFile_              = iConfig.getParameter<std::string>      ( "caliBJetResoFile" );
   addBTagInfo_                   = iConfig.getParameter<bool>             ( "addBTagInfo" );
   ignoreTrackCountingFromAOD_    = iConfig.getParameter<bool>             ( "ignoreTrackCountingFromAOD" );
   ignoreTrackProbabilityFromAOD_ = iConfig.getParameter<bool>             ( "ignoreTrackProbabilityFromAOD" );
@@ -67,7 +68,10 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
   // construct the jet flavour identifier
   if (getJetMCFlavour_) jetFlavId_ = new JetFlavourIdentifier(iConfig.getParameter<edm::ParameterSet>("jetIdParameters"));
   // construct resolution calculator
-  if (addResolutions_) theResoCalc_ = new TopObjectResolutionCalc(edm::FileInPath(caliJetResoFile_).fullPath(), useNNReso_);
+  if (addResolutions_) {
+    theResoCalc_ = new TopObjectResolutionCalc(edm::FileInPath(caliJetResoFile_).fullPath(), useNNReso_);
+    theBResoCalc_ = new TopObjectResolutionCalc(edm::FileInPath(caliBJetResoFile_).fullPath(), useNNReso_);
+  }
 
   // construct Jet Track Associator
   simpleJetTrackAssociator_ = reco::helper::SimpleJetTrackAssociator(trackAssociationPSet_);
@@ -80,7 +84,10 @@ TopJetProducer::TopJetProducer(const edm::ParameterSet& iConfig) {
 
 
 TopJetProducer::~TopJetProducer() {
-  if (addResolutions_) delete theResoCalc_;
+  if (addResolutions_) {
+    delete theResoCalc_;
+    delete theBResoCalc_;
+  }
   if (getJetMCFlavour_) delete jetFlavId_;
   if (addJetCharge_) delete jetCharge_;
 }
@@ -91,13 +98,11 @@ TopJetProducer::~TopJetProducer() {
 //
 
 void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup) {
- 
-  // Get the vector of non-calibrated jets
-  edm::Handle<std::vector<TopJetType> > recjets;
-  iEvent.getByLabel(recJetsSrc_, recjets);
-  // Get the vector of calibrated jets
-  edm::Handle<std::vector<TopJetType> > caljets;
-  iEvent.getByLabel(caliJetsSrc_, caljets);
+
+  // Get the vector of jets
+  edm::Handle<std::vector<TopJetType> > jets;
+  iEvent.getByLabel(jetsSrc_, jets);
+
   // TEMP Jet cleaning from electrons
   edm::Handle<std::vector<TopElectron> > electronsHandle;
   iEvent.getByLabel(topElectronsLabel_, electronsHandle);
@@ -145,8 +150,8 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
 
   // loop over jets
   std::vector<TopJet> * topJets = new std::vector<TopJet>(); 
-  for (size_t j = 0; j < caljets->size(); j++) {
- 
+  for (size_t j = 0; j < jets->size(); j++) {
+
     if (doJetCleaning_) {
     // TEMP Jet cleaning from electrons
       //check that the jet doesn't match in deltaR with an isolated lepton
@@ -154,7 +159,7 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
       //FIXME: don't do muons until have a sensible cut value on their isolation
       float mindr=9999.;
       for (size_t ie=0; ie<electrons.size(); ie++) {
-        float dr=DeltaR<reco::Candidate>()((*caljets)[j],electrons[ie]);
+        float dr=DeltaR<reco::Candidate>()((*jets)[j],electrons[ie]);
         if (dr<mindr) {
           mindr=dr;
         }
@@ -166,19 +171,27 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
     // TEMP End
     }
 
+    // define the jet correctors
+    const JetCorrector * defaultJetCorr = JetCorrector::getJetCorrector("MCJetCorrectorIcone5", iSetup);
+    const JetCorrector * udsJetCorr     = JetCorrector::getJetCorrector("L5FlavorJetCorrectorUds", iSetup);
+    const JetCorrector * gluJetCorr     = JetCorrector::getJetCorrector("L5FlavorJetCorrectorGluon", iSetup);
+    const JetCorrector * cJetCorr       = JetCorrector::getJetCorrector("L5FlavorJetCorrectorC", iSetup);
+    const JetCorrector * bJetCorr       = JetCorrector::getJetCorrector("L5FlavorJetCorrectorB", iSetup);
+    // calculate the energy correction factors
+    double scaleDefault = defaultJetCorr->correction((*jets)[j]);
+    double scaleUds     = scaleDefault * udsJetCorr->correction((*jets)[j]);
+    double scaleGlu     = scaleDefault * gluJetCorr->correction((*jets)[j]);
+    double scaleC       = scaleDefault * cJetCorr->correction((*jets)[j]);
+    double scaleB       = scaleDefault * bJetCorr->correction((*jets)[j]);
+
     // construct the TopJet
-    TopJet ajet((*caljets)[j]);
-    // loop over rec jets to find corresponding jet
-    for (size_t cj = 0; cj < recjets->size(); cj++) {
-      // Ugly matching, but there's no link between the collections
-      if (DeltaR<reco::Candidate>()((*caljets)[j], (*recjets)[cj]) < 0.001) {
-        ajet.setRecJet((*recjets)[cj]);
-      }
-    }
+    TopJet ajet((*jets)[j]);
+    ajet.setP4(scaleDefault*(*jets)[j].p4());
+    ajet.setScaleCalibFactors(1./scaleDefault, scaleUds, scaleGlu, scaleC, scaleB);
 
     // get the MC flavour information for this jet
     if (getJetMCFlavour_) {
-      JetFlavour jetFlavour = jetFlavId_->identifyBasedOnPartons((*caljets)[j]);
+      JetFlavour jetFlavour = jetFlavId_->identifyBasedOnPartons((*jets)[j]);
       ajet.setPartonFlavour(jetFlavour.flavour());
     }
     // do the parton matching
@@ -232,6 +245,9 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
     // add resolution info if demanded
     if (addResolutions_) {
       (*theResoCalc_)(ajet);
+      TopJet abjet(ajet.getBCorrJet());
+      (*theBResoCalc_)(abjet);
+      ajet.setBResolutions(abjet.getResET(), abjet.getResEta(), abjet.getResPhi(), abjet.getResA(), abjet.getResB(), abjet.getResC(), abjet.getResD(), abjet.getResTheta());
     }
 
     // add b-tag info if available & required
@@ -250,11 +266,11 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
         if(  (moduleLabel == "softElectronJetTags    " && ignoreSoftElectronFromAOD_     == true ) ) continue;
 
         for (size_t t = 0; t < jetTags->size(); t++) {
-          // cout << "jet test " << ajet.getLCalJet().et() << "   " << (*jetTags)[t].jet().et()  << endl;
-          //cout << "deltaR   " << DeltaR<reco::Candidate>()((*caljets)[j], (*jetTags)[t].jet()) << endl;
+          // cout << "jet test " << ajet.et() << "   " << (*jetTags)[t].jet().et()  << endl;
+          //cout << "deltaR   " << DeltaR<reco::Candidate>()((*jets)[j], (*jetTags)[t].jet()) << endl;
 
           // FIXME: is this 0.0001 matching fullproof?
-          if (DeltaR<reco::Candidate>()((*caljets)[j], (*jetTags)[t].jet()) < 0.00001) {
+          if (DeltaR<reco::Candidate>()((*jets)[j], (*jetTags)[t].jet()) < 0.00001) {
 
             //FIXME add combined tagger
             //********store discriminators*********

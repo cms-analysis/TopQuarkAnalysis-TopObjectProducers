@@ -2,7 +2,7 @@
 // Author:  Steven Lowette
 // Created: Thu Jun  7 05:49:16 2007 UTC
 //
-// $Id$
+// $Id: TopObjectSelector.h,v 1.4.2.2 2007/10/02 19:49:31 lowette Exp $
 //
 
 #ifndef TopObjectProducer_TopObjectSelector_h
@@ -24,10 +24,6 @@
 #include <vector>
 
 
-typedef SingleObjectSelector<
-            std::vector<TopJetType>,
-            StringCutObjectSelector<TopJetType>
-        > CaloJetSelector;
 typedef SingleObjectSelector<
             std::vector<TopElectron>,
             StringCutObjectSelector<TopElectron>

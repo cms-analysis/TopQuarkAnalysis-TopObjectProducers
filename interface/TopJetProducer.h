@@ -1,5 +1,5 @@
 //
-// $Id$
+// $Id: TopJetProducer.h,v 1.13.2.4 2007/10/02 16:55:22 lowette Exp $
 //
 
 #ifndef TopObjectProducers_TopJetProducer_h
@@ -13,7 +13,7 @@
    with possible adding of resolutions and more things to come
 
   \author   Jan Heyninck
-  \version  $Id$
+  \version  $Id: TopJetProducer.h,v 1.13.2.4 2007/10/02 16:55:22 lowette Exp $
 */
 
 
@@ -53,8 +53,7 @@ class TopJetProducer : public edm::EDProducer {
     // TEMP End
 
     // configurables
-    edm::InputTag     caliJetsSrc_;
-    edm::InputTag     recJetsSrc_;
+    edm::InputTag     jetsSrc_;
     // TEMP Jet cleaning from electrons
     bool              doJetCleaning_;
     edm::InputTag     topElectronsLabel_;
@@ -73,6 +72,7 @@ class TopJetProducer : public edm::EDProducer {
     bool              addResolutions_;
     bool              useNNReso_;
     std::string       caliJetResoFile_;
+    std::string       caliBJetResoFile_;
     bool              addBTagInfo_;
     bool              ignoreTrackCountingFromAOD_;
     bool              ignoreTrackProbabilityFromAOD_;
@@ -87,6 +87,7 @@ class TopJetProducer : public edm::EDProducer {
     // tools
     JetFlavourIdentifier                   * jetFlavId_;
     TopObjectResolutionCalc                * theResoCalc_;
+    TopObjectResolutionCalc                * theBResoCalc_;
     reco::helper::SimpleJetTrackAssociator   simpleJetTrackAssociator_;
     JetCharge                              * jetCharge_;
     GreaterByEt<TopJet>                      eTComparator_;
