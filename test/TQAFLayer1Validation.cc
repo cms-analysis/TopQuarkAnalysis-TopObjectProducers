@@ -22,7 +22,7 @@
 //
 // Original Author:  James LAMB
 //         Created:  Thu Oct 25 17:44:42 CEST 2007
-// $Id: TQAFLayer1Validation.cc,v 1.2 2007/11/26 08:46:16 jlamb Exp $
+// $Id: TQAFLayer1Validation.cc,v 1.3 2007/11/26 09:01:27 jlamb Exp $
 //
 //
 
@@ -53,7 +53,6 @@
 #include "DataFormats/EgammaCandidates/interface/PMGsfElectronIsoNumCollection.h"
 #include "DataFormats/Math/interface/deltaR.h"
 #include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticleCandidateFwd.h"
 #include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/METReco/interface/GenMETFwd.h"
 #include "DataFormats/METReco/interface/CaloMETFwd.h"
