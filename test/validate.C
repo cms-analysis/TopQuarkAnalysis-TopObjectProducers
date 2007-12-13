@@ -46,8 +46,7 @@ void validate_electrons(char *fname) {
   TH1F *deltaRSel=(TH1F*)fin->Get("deltaRSel_");
   TH1F *deltaRIso=(TH1F*)fin->Get("deltaRIso_");
 
-  TH2F *topMETVsGenMET=(TH2F*)fin->Get("topMETVsGenMET_");
-  TH2F *topMETVsGenParCandMET=(TH2F*)fin->Get("topMETVsGenParCandMET_");
+
   
   TH1F *recoEffVsEt=recoMatchedGenEleVsEt->Clone();
   recoEffVsEt->Divide(allGenEleVsEt);
@@ -113,12 +112,51 @@ void validate_electrons(char *fname) {
   leg2->AddEntry( deltaRSel,"selected, \"loose\"");
   leg2->AddEntry(deltaRIso,"selected, \"loose\" and isolated");
   leg2->Draw("same");
-
-  TCanvas *c3=new TCanvas();
-  
   
   
 }
+
+
+
+void validate_muons(char *fname) {
+  
+  TFile *fin=new TFile(fname);
+
+  TH1F *allGenMuonVsEt=(TH1F*)fin->Get("allGenMuonVsEt_");
+  TH1F *allGenMuonVsEta=(TH1F*)fin->Get("allGenMuonVsEta_");
+  TH1F *recoMatchedGenMuonVsEt=(TH1F*)fin->Get("recoMatchedGenMuonVsEt_");
+  TH1F *recoMatchedGenMuonVsEta=(TH1F*)fin->Get("recoMatchedGenMuonVsEta_");
+  TH1F *isoMatchedGenMuonVsEt=(TH1F*)fin->Get("isoMatchedGenMuonVsEt_");
+  TH1F *isoMatchedGenMuonVsEta=(TH1F*)fin->Get("isoMatchedGenMuonVsEta_");
+
+  TH1F *deltaRRecoMuon=(TH1F*)fin->Get("deltaRRecoMuon_");
+  TH1F *deltaRIsoMuon=(TH1F*)fin->Get("deltaRIsoMuon_");
+
+  TH1F *recoMuonEffVsEt=recoMatchedGenMuonVsEt->Clone();
+  recoMuonEffVsEt->Divide(allGenMuonVsEt);
+  TH1F *recoMuonEffVsEta=recoMatchedGenMuonVsEta->Clone();
+  recoMuonEffVsEta->Divide(allGenMuonVsEta);
+  
+  TH1F *isoMuonEffVsEt=isoMatchedGenMuonVsEt->Clone();
+  isoMuonEffVsEt->Divide(allGenMuonVsEt);
+  TH1F *isoMuonEffVsEta=isoMatchedGenMuonVsEta->Clone();
+  isoMuonEffVsEta->Divide(allGenMuonVsEta);
+  
+  TCanvas *c0=new TCanvas();
+  recoMuonEffVsEt->SetXTitle("gen. level ET");
+  recoMuonEffVsEt->SetYTitle("eff.");
+  recoMuonEffVsEt->SetLineWidth(3);
+  isoMuonEffVsEt->SetLineWidth(3);
+  recoMuonEffVsEt->Draw();
+  isoMuonEffVsEt->SetLineColor(2);
+  isoMuonEffVsEt->Draw("same");
+  TLegend *leg0=new TLegend(0.4,0.6,0.9,0.9);
+  leg0->AddEntry(recoMuonEffVsEt,"reco.");
+  leg0->AddEntry(isoMuonEffVsEt,"isolated");
+  leg0->Draw("same");
+  
+}
+
 
 
 void validate_met(char *fname) {

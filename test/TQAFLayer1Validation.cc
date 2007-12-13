@@ -17,12 +17,13 @@
  6) compare numbers of PMGsfElectrons and TopElectrons, not counting the duplicates in the PMGsfElectron collection
  7) some plots for MET
  8) some plots for jets
+ 9) calculate reco and isolation efficiency from TopMuons
  NB obviously the results of some of these checks are sample-dependent
 */
 //
 // Original Author:  James LAMB
 //         Created:  Thu Oct 25 17:44:42 CEST 2007
-// $Id: TQAFLayer1Validation.cc,v 1.3 2007/11/26 09:01:27 jlamb Exp $
+// $Id: TQAFLayer1Validation.cc,v 1.4 2007/12/05 18:10:02 lowette Exp $
 //
 //
 
@@ -69,6 +70,10 @@
 #include "TH2F.h"
 #include "TFile.h"
 
+const float MUON_TKISOCUT=3;
+const float MUON_CALOISOCUT=5;
+const float MUON_ETA_MAX=2.4;
+const float MINDR_MUONGENMATCH=0.2;
 
 class TQAFLayer1Validation : public edm::EDAnalyzer {
 public:
@@ -82,10 +87,12 @@ private:
   virtual void endJob() ;
   bool findDuplicates(edm::Handle<std::vector<TopElectron> > topElectrons);
   std::vector<reco::GenParticleCandidate> getGenPrimEles(edm::Handle<reco::CandidateCollection> genParHandle);
+  std::vector<reco::GenParticleCandidate> getGenPrimMuons(edm::Handle<reco::CandidateCollection> genParHandle);
   std::vector<reco::GenParticleCandidate> getGenWDecayProds(edm::Handle<reco::CandidateCollection> genParHandle);
   std::vector<uint32_t> findNonDupeIndices(edm::Handle<std::vector<reco::PixelMatchGsfElectron> > PMGsfElectronsH);
   std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopElectron> eles);  
-  std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopJet> jets);
+  std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopMuon> muons);  
+  std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopJet> topJets);
   uint32_t classifyEvent(const reco::CandidateCollection &genPars);
   void initHistos();
   void saveHistos();
@@ -114,16 +121,41 @@ private:
   TH1F *deltaRReco_;
   TH1F *deltaRSel_;
   TH1F *deltaRIso_;
+
+  TH1F *allGenMuonVsEt_;
+  TH1F *allGenMuonVsEta_;
+  TH1F *recoMatchedGenMuonVsEt_;
+  TH1F *recoMatchedGenMuonVsEta_;
+  TH1F *selMatchedGenMuonVsEt_;
+  TH1F *selMatchedGenMuonVsEta_;
+  TH1F *isoMatchedGenMuonVsEt_;
+  TH1F *isoMatchedGenMuonVsEta_;
+  TH1F *deltaRRecoMuon_;
+  TH1F *deltaRIsoMuon_;
+
   
   TH1F *corrCaloMET_;
   TH1F *topMET_;
   TH1F *genMET_;
   TH1F *tqafGenMET_;
 
-  TH1F *jetsInvMass_;
-  TH1F *jetsEt_;
-  TH1F *jetsEta_;
-  TH2F* jetsEtVsEta_;
+  TH1F *topJetsEt_;
+  TH1F *topJetsEta_;
+  TH2F *topJetsEtVsEta_;
+  TH1F *caloJetsEt_;
+  TH1F *caloJetsEta_;
+  TH2F *caloJetsEtVsEta_;
+  TH1F *corrCaloJetsEt_;
+  TH1F *corrCaloJetsEta_;
+  TH2F *corrCaloJetsEtVsEta_;
+  TH1F *genJetsEt_;
+  TH1F *genJetsEta_;
+  TH2F *genJetsEtVsEta_;
+  TH1F *nTopJetsPerEvt_;
+  TH1F *nCaloJetsPerEvt_;
+  TH1F *nCaloJetsNoAcceptCutsPerEvt_;
+  TH1F *nCorrCaloJetsPerEvt_;
+  TH1F *nGenJetsPerEvt_;
   
   //utilities
   uint32_t nEvt_;
@@ -168,9 +200,13 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     std::cout <<"doing event: "<<nEvt_<<std::endl;
   }
   nEvt_++;
+
+
   /* get the necessary event data, some minor re-containerizing */
   Handle<std::vector<TopElectron> > topElectronsH;
   iEvent.getByLabel("allLayer1TopElectrons","",topElectronsH);
+  Handle<std::vector<TopMuon> > topMuonsH;
+  iEvent.getByLabel("allLayer1TopMuons","",topMuonsH);
   Handle<reco::CandidateCollection> genParHandle;
   iEvent.getByLabel("genParticleCandidates",genParHandle);
   Handle<std::vector<reco::PixelMatchGsfElectron> > PMGsfElectronsH;
@@ -190,6 +226,12 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<reco::CaloMETCollection> corrCaloMETHandle;
   iEvent.getByLabel("corMetType1Icone5",corrCaloMETHandle);
   reco::CaloMET corrCaloMET=(*corrCaloMETHandle).at(0);
+  Handle<std::vector<reco::CaloJet> > corrCaloJetsHandle;
+  iEvent.getByLabel("MCJetCorJetIcone5",corrCaloJetsHandle);
+  Handle<std::vector<reco::CaloJet> > caloJetsHandle;
+  iEvent.getByLabel("iterativeCone5CaloJets",caloJetsHandle);
+  Handle<std::vector<reco::GenJet> > genJetsHandle;
+  iEvent.getByLabel("iterativeCone5GenJetsPt10",genJetsHandle);
   Handle<std::vector<TopJet> > jetsHandle;
   iEvent.getByLabel("allLayer1TopJets",jetsHandle);
   /* end get the necessary event data*/
@@ -316,31 +358,81 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
    corrCaloMET_->Fill(corrCaloMET.et());
 
    //task 8: some plots for jets
-   //invariant mass of all jets wrt each other
-   for (uint32_t ij=0;ij<jetsHandle->size();ij++) {
-     reco::Particle::LorentzVector vi=(jetsHandle->at(ij)).p4();
-     for (uint32_t jj=ij+1;jj<jetsHandle->size();jj++) {
-       reco::Particle::LorentzVector vj=(jetsHandle->at(jj)).p4();
-       float mass=(vi+vj).M();
-       jetsInvMass_->Fill(mass);
+   //topJets Et, eta, et vs. eta
+   int nTopJets=0;
+   int nCaloJets=0;
+   int nCorrCaloJets=0;
+   int nGenJets=0;
+   for (uint32_t ij=0;ij<topJetsHandle->size();ij++) {
+     TopJet topJet=topJetsHandle->at(ij);
+     topJetsEt_->Fill(topJet.et());
+     topJetsEta_->Fill(topJet.eta());
+     topJetsEtVsEta_->Fill(topJet.eta(),topJet.et());
+     if (topJet.et()>5 && fabs(topJet.eta()<5)) nTopJets++;
+   }
+   //uncorrected reco::CaloJets Et, eta, et vs. eta
+   for (uint32_t ij=0;ij<caloJetsHandle->size();ij++) {
+     reco::CaloJet caloJet=caloJetsHandle->at(ij);
+     caloJetsEt_->Fill(caloJet.et());
+     caloJetsEta_->Fill(caloJet.eta());
+     caloJetsEtVsEta_->Fill(caloJet.eta(),caloJet.et());
+     if (caloJet.et()>5 && fabs(caloJet.eta()<5)) nCaloJets++;
+   }
+   //corrected reco::CaloJets Et, eta, et vs. eta
+   for (uint32_t ij=0;ij<corrCaloJetsHandle->size();ij++) {
+     reco::CaloJet corrCaloJet=corrCaloJetsHandle->at(ij);
+     corrCaloJetsEt_->Fill(corrCaloJet.et());
+     corrCaloJetsEta_->Fill(corrCaloJet.eta());
+     corrCaloJetsEtVsEta_->Fill(corrCaloJet.eta(),corrCaloJet.et());
+     if (corrCaloJet.et()>5 && fabs(corrCaloJet.eta()<5)) nCorrCaloJets++;
+   }
+   for (uint32_t ij=0;ij<genJetsHandle->size();ij++) {
+     reco::GenJet genJet=genJetsHandle->at(ij);
+     genJetsEt_->Fill(genJet.et());
+     genJetsEta_->Fill(genJet.eta());
+     genJetsEtVsEta_->Fill(genJet.eta(),genJet.et());
+     std::vector<const reco::GenParticleCandidate *> genJetConst=genJet.getConstituents();
+     if (genJet.et()>5 && fabs(genJet.eta()<5)) nGenJets++;
+   }
+   nTopJetsPerEvt_->Fill(nTopJets);
+   nCaloJetsPerEvt_->Fill(nCaloJets);
+   nCorrCaloJetsPerEvt_->Fill(nCorrCaloJets);
+   nGenJetsPerEvt_->Fill(nGenJets);
+   
+   //task 9: efficiency for muons
+   std::vector<TopMuon> isoMuons;
+   for (uint32_t im=0;im<topMuonsH->size();im++) {
+     //for consistency with fake rate (defined elsewhere), require to be within eta<2.4
+     if (fabs(topMuonsH->at(im).eta()) > MUON_ETA_MAX) continue;
+     double tkIso=topMuonsH->at(im).getTrackIso();
+     double caloIso=topMuonsH->at(im).getCaloIso();
+     if (tkIso<MUON_TKISOCUT && caloIso < MUON_CALOISOCUT) isoMuons.push_back(topMuonsH->at(im));
+   }
+   std::vector<reco::GenParticleCandidate> genPrimMuons=getGenPrimMuons(genParHandle);
+   for (uint32_t ip=0;ip<genPrimMuons.size();ip++) {
+     
+     //require the gen muon to be within eta acceptance
+     if (fabs(genPrimMuons[ip].eta()) > MUON_ETA_MAX) continue;
+     
+     allGenMuonVsEt_->Fill(genPrimMuons[ip].et());
+     allGenMuonVsEta_->Fill(genPrimMuons[ip].eta());
+     
+     //find the nearest reco muon
+     std::pair<float, size_t> match=calcMinDR(genPrimMuons[ip], *topMuonsH);  
+     deltaRRecoMuon_->Fill(match.first);
+     if (match.first<MINDR_MUONGENMATCH) {
+       recoMatchedGenMuonVsEt_->Fill(genPrimMuons[ip].et());
+       recoMatchedGenMuonVsEta_->Fill(genPrimMuons[ip].eta());
+     }
+     //find nearest isolated muon
+     std::pair<float, size_t> matchIso=calcMinDR(genPrimMuons[ip], isoMuons);
+     deltaRIsoMuon_->Fill(matchIso.first);
+     if (matchIso.first<MINDR_MUONGENMATCH) {
+       isoMatchedGenMuonVsEt_->Fill(genPrimMuons[ip].et());
+       isoMatchedGenMuonVsEta_->Fill(genPrimMuons[ip].eta());
      }
    }
-   //jets Et, eta, et vs. eta
-   for (uint32_t ij=0;ij<jetsHandle->size();ij++) {
-     TopJet jet=jetsHandle->at(ij);
-     jetsEt_->Fill(jet.et());
-     jetsEta_->Fill(jet.eta());
-     jetsEtVsEta_->Fill(jet.eta(),jet.et());
-   }
-   //W invariant mass
-   std::vector<reco::GenParticleCandidate> genWDP=getGenWDecayProds(genParHandle);
-   if (genWDP.size()==4) {//in case this code is run on non-top, this block won't run correctly on non-top
-     if (abs(genWDP.at(0).pdgId())>0 && abs(genWDP.at(0).pdgId())<6) {//it's a quark
-       //therefor W+ decayed as quark
-       //find closest jet 
-       
-     }
-   }
+   
 }
 
 
@@ -357,7 +449,7 @@ void TQAFLayer1Validation::endJob() {
   theNumbers_->SetBinContent(6,nTopElectronsPassEleIdPassTqaf_caloIso_);
   theNumbers_->SetBinContent(7,nPMGsfElectrons_);
   theNumbers_->SetBinContent(8,nPMGsfElectronsPassEleId_);
-
+  theNumbers_->SetBinContent(9,nEvt_);
 
   saveHistos();
 
@@ -385,8 +477,8 @@ bool TQAFLayer1Validation::findDuplicates(edm::Handle<std::vector<TopElectron> >
 }
 
 //get a vector of the primary electrons out of the event
-//that means the electrons that come from the W
-//in practice that means the electrons that come from the electrons that come from the W
+//that means the electrons that come from the W or Z
+//in practice that means the electrons that come from the electrons that come from the W of Z
 // (so after any FSR)
 std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimEles(edm::Handle<reco::CandidateCollection> genParHandle) {
   
@@ -397,11 +489,36 @@ std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimEles(edm
     if ((*genParHandle)[ip].numberOfMothers()<1) continue;
     if (abs((*genParHandle)[ip].mother()->pdgId())!=11) continue;
     if ((*genParHandle)[ip].mother()->numberOfMothers()<1) continue;
-    if (abs((*genParHandle)[ip].mother()->mother()->pdgId())!=24) continue;
-    //yikes, now we finally have electrons whose mothers are electrons whose mothers are Ws
+    if (abs((*genParHandle)[ip].mother()->mother()->pdgId())!=23 &&
+	abs((*genParHandle)[ip].mother()->mother()->pdgId())!=24) continue;
+    //yikes, now we finally have electrons whose mothers are electrons whose mothers are Ws or Zs
     //reco::GenParticleCandidate tmp=static_cast<reco::GenParticleCandidate> ((*genParHandle)[ip]);
     //output.push_back((*genParHandle)[ip]);
     //reco::GenParticleCandidate tmp=(reco::GenParticleCandidate) ((*genParHandle)[ip]);
+    reco::GenParticleCandidate tmp = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&(*genParHandle)[ip])));
+    output.push_back(tmp);
+  }
+  return output;
+
+}
+
+//get a vector of the primary muons out of the event
+//that means the muons that come from the W or Z
+//in practice that means the muons that come from the muons that come from the W or the Z
+// (so after any FSR)
+std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimMuons(edm::Handle<reco::CandidateCollection> genParHandle) {
+  
+  std::vector<reco::GenParticleCandidate> output;
+  for (uint32_t ip=0;ip<genParHandle->size();ip++) {
+    if (abs((*genParHandle)[ip].pdgId())!=13) continue;
+    if ((*genParHandle)[ip].status()!=1) continue;
+    if ((*genParHandle)[ip].numberOfMothers()<1) continue;
+    if (abs((*genParHandle)[ip].mother()->pdgId())!=13) continue;
+    if ((*genParHandle)[ip].mother()->numberOfMothers()<1) continue;
+    if (abs((*genParHandle)[ip].mother()->mother()->pdgId())!=23 &&
+	abs((*genParHandle)[ip].mother()->mother()->pdgId())!=24
+	) continue;
+    //yikes, now we finally have muons whose mothers are muons whose mothers are Ws
     reco::GenParticleCandidate tmp = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&(*genParHandle)[ip])));
     output.push_back(tmp);
   }
@@ -502,6 +619,23 @@ std::pair<float,size_t> TQAFLayer1Validation::calcMinDR(reco::Particle par, std:
   }
   return std::make_pair(mindr,indexMin);
 }
+  
+std::pair<float,size_t> TQAFLayer1Validation::calcMinDR(reco::Particle par, std::vector<TopMuon> muons) {
+
+  float mindr=9999.;
+  size_t indexMin=0;
+  
+  for (size_t im=0;im<muons.size();im++) {
+    
+    float dr=deltaR(par,muons[im]);
+    if (dr<mindr) {
+      mindr=dr;
+      indexMin=im;
+    }
+    
+  }
+  return std::make_pair(mindr,indexMin);
+}
 
 
 std::pair<float,size_t> TQAFLayer1Validation::calcMinDR(reco::Particle par, std::vector<TopJet> jets) {
@@ -541,7 +675,7 @@ uint32_t TQAFLayer1Validation::classifyEvent(const reco::CandidateCollection &ge
 
   
   //loop over the doc lines (assumed not to extend past index 99
-  for (uint32_t ip=0;ip<100;ip++) {
+  for (uint32_t ip=0;ip<100 && ip<genPars.size();ip++) {
     
     //skip anything not a doc line:
     if (genPars[ip].status()!=3) continue;
@@ -647,15 +781,35 @@ void TQAFLayer1Validation::initHistos() {
   deltaRSel_=new TH1F("deltaRSel_","deltaR between gen-level electron and nearest \"loose\" selected electron",1000,0,1);
   deltaRIso_=new TH1F("deltaRIso_","deltaR between gen-level electron and nearest \"loose\" selected and isolated electron",1000,0,1);
 
+  allGenMuonVsEt_=new TH1F("allGenMuonVsEt_","Et Spectrum of Gen-level muons",500,0,500);
+  allGenMuonVsEta_=new TH1F("allGenMuonVsEta_","Eta Spectrum of Gen-level muons",100,-5,5);
+  recoMatchedGenMuonVsEt_=new TH1F("recoMatchedGenMuonVsEt_","Et Spectrum of Gen-level muons found in Reco",500,0,500);
+  recoMatchedGenMuonVsEta_=new TH1F("recoMatchedGenMuonVsEta_","Eta Spectrum of Gen-level muons found in Reco",100,-5,5);
+  isoMatchedGenMuonVsEt_=new TH1F("isoMatchedGenMuonVsEt_","Et Spectrum of Gen-level muons found in Reco and isolated",500,0,500);
+  isoMatchedGenMuonVsEta_=new TH1F("isoMatchedGenMuonVsEta_","Eta Spectrum of Gen-level muons found in Reco and isolated",100,-5,5);
+  deltaRRecoMuon_=new TH1F("deltaRRecoMuon_","deltaR between gen-level electron and nearest reco muon",1000,0,1);
+  deltaRIsoMuon_=new TH1F("deltaRIsoMuon_","deltaR between gen-level muon and nearest \"loose\" selected and isolated muon",1000,0,1);
+
   topMET_=new TH1F("topMET_","TopMET",200,0,200);
   genMET_=new TH1F("genMET_","GenMET",200,0,200);
   tqafGenMET_=new TH1F("tqafGenMET_","Gen MET from TQAF",200,0,200);
   corrCaloMET_=new TH1F("corrCaloMET_","Corrected Calo MET",200,0,200);
-
-  jetsInvMass_=new TH1F("jetsInvMass_","Invariant Mass of All Pairs of Jets",200,0,200);
-  jetsEt_=new TH1F("jetsEt_","TopJets Et",200,0,200);
-  jetsEta_=new TH1F("jetsEta_","TopJets Eta",100,-5,5);
-  jetsEtVsEta_=new TH2F("jetsEtVsEta_","TopJets Et vs. Eta",100,-5,5,200,0,200);  
+  topJetsEt_=new TH1F("topJetsEt_","TopJets Et",200,0,200);
+  topJetsEta_=new TH1F("topJetsEta_","TopJets Eta",100,-5,5);
+  topJetsEtVsEta_=new TH2F("topJetsEtVsEta_","TopJets Et vs. Eta",100,-5,5,200,0,200);  
+  corrCaloJetsEt_=new TH1F("corrCaloJetsEt_","Corrected CaloJets Et",200,0,200);
+  corrCaloJetsEta_=new TH1F("corrCaloJetsEta_","Corrected CaloJets Eta",100,-5,5);
+  corrCaloJetsEtVsEta_=new TH2F("corrCaloJetsEtVsEta_","Corrected CaloJets Et vs. Eta",100,-5,5,200,0,200);  
+  caloJetsEt_=new TH1F("caloJetsEt_","Uncorrected CaloJets Et",200,0,200);
+  caloJetsEta_=new TH1F("caloJetsEta_","Uncorrected CaloJets Eta",100,-5,5);
+  caloJetsEtVsEta_=new TH2F("caloJetsEtVsEta_","Uncorrected CaloJets Et vs. Eta",100,-5,5,200,0,200);  
+  genJetsEt_=new TH1F("genJetsEt_","GenJets Et",200,0,200);
+  genJetsEta_=new TH1F("genJetsEta_","GenJets Eta",100,-5,5);
+  genJetsEtVsEta_=new TH2F("genJetsEtVsEta_","GenJets Et vs. Eta",100,-5,5,200,0,200);  
+  nTopJetsPerEvt_=new TH1F("nTopJetsPerEvt_","Number of Top Jets per Events, et>5 abs(eta)<5",100,0,100);
+  nCaloJetsPerEvt_=new TH1F("nCaloJetsPerEvt_","Number of Uncorrected Calo Jets per Events, et>5 abs(eta)<5",100,0,100);
+  nCorrCaloJetsPerEvt_=new TH1F("nCorrCaloJetsPerEvt_","Number of Corrected Calo Jets per Events, et>5 abs(eta)<5",100,0,100);
+  nGenJetsPerEvt_=new TH1F("nGenJetsPerEvt_","Number of Gen Jets per Events, et>5 abs(eta)<5",100,0,100);
 
   theNumbers_->SetDirectory(0);
   allGenEleVsEt_->SetDirectory(0);
@@ -669,14 +823,37 @@ void TQAFLayer1Validation::initHistos() {
   deltaRReco_->SetDirectory(0);
   deltaRSel_->SetDirectory(0);
   deltaRIso_->SetDirectory(0);
+
+  allGenMuonVsEt_->SetDirectory(0);
+  allGenMuonVsEta_->SetDirectory(0);
+  recoMatchedGenMuonVsEt_->SetDirectory(0);
+  recoMatchedGenMuonVsEta_->SetDirectory(0);
+  isoMatchedGenMuonVsEt_->SetDirectory(0);
+  isoMatchedGenMuonVsEta_->SetDirectory(0);
+  deltaRRecoMuon_->SetDirectory(0);
+  deltaRIsoMuon_->SetDirectory(0);
+
   topMET_->SetDirectory(0);
   genMET_->SetDirectory(0);
   tqafGenMET_->SetDirectory(0);
   corrCaloMET_->SetDirectory(0);
-  jetsInvMass_->SetDirectory(0);
-  jetsEt_->SetDirectory(0);
-  jetsEta_->SetDirectory(0);
-  jetsEtVsEta_->SetDirectory(0);
+  topJetsEt_->SetDirectory(0);
+  topJetsEta_->SetDirectory(0);
+  topJetsEtVsEta_->SetDirectory(0);
+  corrCaloJetsEt_->SetDirectory(0);
+  corrCaloJetsEta_->SetDirectory(0);
+  corrCaloJetsEtVsEta_->SetDirectory(0);
+  caloJetsEt_->SetDirectory(0);
+  caloJetsEta_->SetDirectory(0);
+  caloJetsEtVsEta_->SetDirectory(0);
+  genJetsEt_->SetDirectory(0);
+  genJetsEta_->SetDirectory(0);
+  genJetsEtVsEta_->SetDirectory(0);
+  nTopJetsPerEvt_->SetDirectory(0);
+  nCaloJetsPerEvt_->SetDirectory(0);
+  nCorrCaloJetsPerEvt_->SetDirectory(0);
+  nGenJetsPerEvt_->SetDirectory(0);
+
 }
 
 void TQAFLayer1Validation::saveHistos() {
@@ -695,14 +872,39 @@ void TQAFLayer1Validation::saveHistos() {
   deltaRReco_->SetDirectory(outputRootFile_);
   deltaRSel_->SetDirectory(outputRootFile_);
   deltaRIso_->SetDirectory(outputRootFile_);
+
+  allGenMuonVsEt_->SetDirectory(outputRootFile_);
+  allGenMuonVsEta_->SetDirectory(outputRootFile_);
+  recoMatchedGenMuonVsEt_->SetDirectory(outputRootFile_);
+  recoMatchedGenMuonVsEta_->SetDirectory(outputRootFile_);
+  isoMatchedGenMuonVsEt_->SetDirectory(outputRootFile_);
+  isoMatchedGenMuonVsEta_->SetDirectory(outputRootFile_);
+  deltaRRecoMuon_->SetDirectory(outputRootFile_);
+  deltaRIsoMuon_->SetDirectory(outputRootFile_);
+
+
   topMET_->SetDirectory(outputRootFile_);
   genMET_->SetDirectory(outputRootFile_);
   tqafGenMET_->SetDirectory(outputRootFile_);
   corrCaloMET_->SetDirectory(outputRootFile_);
-  jetsInvMass_->SetDirectory(outputRootFile_);
-  jetsEt_->SetDirectory(outputRootFile_);
-  jetsEta_->SetDirectory(outputRootFile_);
-  jetsEtVsEta_->SetDirectory(outputRootFile_);
+  topJetsEt_->SetDirectory(outputRootFile_);
+  topJetsEta_->SetDirectory(outputRootFile_);
+  topJetsEtVsEta_->SetDirectory(outputRootFile_);
+  caloJetsEt_->SetDirectory(outputRootFile_);
+  caloJetsEta_->SetDirectory(outputRootFile_);
+  caloJetsEtVsEta_->SetDirectory(outputRootFile_);
+  corrCaloJetsEt_->SetDirectory(outputRootFile_);
+  corrCaloJetsEta_->SetDirectory(outputRootFile_);
+  corrCaloJetsEtVsEta_->SetDirectory(outputRootFile_);
+  genJetsEt_->SetDirectory(outputRootFile_);
+  genJetsEta_->SetDirectory(outputRootFile_);
+  genJetsEtVsEta_->SetDirectory(outputRootFile_);
+  nTopJetsPerEvt_->SetDirectory(outputRootFile_);
+  nCaloJetsPerEvt_->SetDirectory(outputRootFile_);
+  nCorrCaloJetsPerEvt_->SetDirectory(outputRootFile_);
+  nGenJetsPerEvt_->SetDirectory(outputRootFile_);
+
+
 
   outputRootFile_->Write();
   outputRootFile_->Close();
