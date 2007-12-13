@@ -23,7 +23,7 @@
 //
 // Original Author:  James LAMB
 //         Created:  Thu Oct 25 17:44:42 CEST 2007
-// $Id: TQAFLayer1Validation.cc,v 1.4 2007/12/05 18:10:02 lowette Exp $
+// $Id: TQAFLayer1Validation.cc,v 1.5 2007/12/13 10:33:08 jlamb Exp $
 //
 //
 
@@ -232,8 +232,8 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByLabel("iterativeCone5CaloJets",caloJetsHandle);
   Handle<std::vector<reco::GenJet> > genJetsHandle;
   iEvent.getByLabel("iterativeCone5GenJetsPt10",genJetsHandle);
-  Handle<std::vector<TopJet> > jetsHandle;
-  iEvent.getByLabel("allLayer1TopJets",jetsHandle);
+  Handle<std::vector<TopJet> > topJetsHandle;
+  iEvent.getByLabel("allLayer1TopJets",topJetsHandle);
   /* end get the necessary event data*/
   
 
