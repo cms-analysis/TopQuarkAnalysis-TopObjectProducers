@@ -23,7 +23,7 @@
 //
 // Original Author:  James LAMB
 //         Created:  Thu Oct 25 17:44:42 CEST 2007
-// $Id: TQAFLayer1Validation.cc,v 1.5 2007/12/13 10:33:08 jlamb Exp $
+// $Id: TQAFLayer1Validation.cc,v 1.6 2007/12/13 11:12:33 jlamb Exp $
 //
 //
 
@@ -226,8 +226,8 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<reco::CaloMETCollection> corrCaloMETHandle;
   iEvent.getByLabel("corMetType1Icone5",corrCaloMETHandle);
   reco::CaloMET corrCaloMET=(*corrCaloMETHandle).at(0);
-  Handle<std::vector<reco::CaloJet> > corrCaloJetsHandle;
-  iEvent.getByLabel("MCJetCorJetIcone5",corrCaloJetsHandle);
+//   Handle<std::vector<reco::CaloJet> > corrCaloJetsHandle;
+//   iEvent.getByLabel("MCJetCorJetIcone5",corrCaloJetsHandle);
   Handle<std::vector<reco::CaloJet> > caloJetsHandle;
   iEvent.getByLabel("iterativeCone5CaloJets",caloJetsHandle);
   Handle<std::vector<reco::GenJet> > genJetsHandle;
@@ -379,13 +379,13 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      if (caloJet.et()>5 && fabs(caloJet.eta()<5)) nCaloJets++;
    }
    //corrected reco::CaloJets Et, eta, et vs. eta
-   for (uint32_t ij=0;ij<corrCaloJetsHandle->size();ij++) {
-     reco::CaloJet corrCaloJet=corrCaloJetsHandle->at(ij);
-     corrCaloJetsEt_->Fill(corrCaloJet.et());
-     corrCaloJetsEta_->Fill(corrCaloJet.eta());
-     corrCaloJetsEtVsEta_->Fill(corrCaloJet.eta(),corrCaloJet.et());
-     if (corrCaloJet.et()>5 && fabs(corrCaloJet.eta()<5)) nCorrCaloJets++;
-   }
+//    for (uint32_t ij=0;ij<corrCaloJetsHandle->size();ij++) {
+//      reco::CaloJet corrCaloJet=corrCaloJetsHandle->at(ij);
+//      corrCaloJetsEt_->Fill(corrCaloJet.et());
+//      corrCaloJetsEta_->Fill(corrCaloJet.eta());
+//      corrCaloJetsEtVsEta_->Fill(corrCaloJet.eta(),corrCaloJet.et());
+//      if (corrCaloJet.et()>5 && fabs(corrCaloJet.eta()<5)) nCorrCaloJets++;
+//    }
    for (uint32_t ij=0;ij<genJetsHandle->size();ij++) {
      reco::GenJet genJet=genJetsHandle->at(ij);
      genJetsEt_->Fill(genJet.et());
