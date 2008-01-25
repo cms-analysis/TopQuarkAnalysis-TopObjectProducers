@@ -23,7 +23,7 @@
 //
 // Original Author:  James LAMB
 //         Created:  Thu Oct 25 17:44:42 CEST 2007
-// $Id: TQAFLayer1Validation.cc,v 1.6 2007/12/13 11:12:33 jlamb Exp $
+// $Id: TQAFLayer1Validation.cc,v 1.7 2008/01/22 15:36:38 jlamb Exp $
 //
 //
 
@@ -53,7 +53,7 @@
 #include "DataFormats/EgammaCandidates/interface/PMGsfElectronIsoCollection.h"
 #include "DataFormats/EgammaCandidates/interface/PMGsfElectronIsoNumCollection.h"
 #include "DataFormats/Math/interface/deltaR.h"
-#include "DataFormats/HepMCCandidate/interface/GenParticleCandidate.h"
+#include "DataFormats/HepMCCandidate/interface/GenParticle.h"
 #include "DataFormats/METReco/interface/GenMET.h"
 #include "DataFormats/METReco/interface/GenMETFwd.h"
 #include "DataFormats/METReco/interface/CaloMETFwd.h"
@@ -86,14 +86,14 @@ private:
   virtual void analyze(const edm::Event&, const edm::EventSetup&);
   virtual void endJob() ;
   bool findDuplicates(edm::Handle<std::vector<TopElectron> > topElectrons);
-  std::vector<reco::GenParticleCandidate> getGenPrimEles(edm::Handle<reco::CandidateCollection> genParHandle);
-  std::vector<reco::GenParticleCandidate> getGenPrimMuons(edm::Handle<reco::CandidateCollection> genParHandle);
-  std::vector<reco::GenParticleCandidate> getGenWDecayProds(edm::Handle<reco::CandidateCollection> genParHandle);
+  std::vector<reco::GenParticle> getGenPrimEles(edm::Handle<reco::GenParticleCollection> genParHandle);
+  std::vector<reco::GenParticle> getGenPrimMuons(edm::Handle<reco::GenParticleCollection> genParHandle);
+  std::vector<reco::GenParticle> getGenWDecayProds(edm::Handle<reco::GenParticleCollection> genParHandle);
   std::vector<uint32_t> findNonDupeIndices(edm::Handle<std::vector<reco::PixelMatchGsfElectron> > PMGsfElectronsH);
   std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopElectron> eles);  
   std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopMuon> muons);  
   std::pair<float,size_t> calcMinDR(reco::Particle par, std::vector<TopJet> topJets);
-  uint32_t classifyEvent(const reco::CandidateCollection &genPars);
+  uint32_t classifyEvent(const reco::GenParticleCollection &genPars);
   void initHistos();
   void saveHistos();
   
@@ -207,8 +207,8 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   iEvent.getByLabel("allLayer1TopElectrons","",topElectronsH);
   Handle<std::vector<TopMuon> > topMuonsH;
   iEvent.getByLabel("allLayer1TopMuons","",topMuonsH);
-  Handle<reco::CandidateCollection> genParHandle;
-  iEvent.getByLabel("genParticleCandidates",genParHandle);
+  Handle<reco::GenParticleCollection> genParHandle;
+  iEvent.getByLabel("genParticles",genParHandle);
   Handle<std::vector<reco::PixelMatchGsfElectron> > PMGsfElectronsH;
   iEvent.getByLabel("pixelMatchGsfElectrons",PMGsfElectronsH);
   Handle<reco::ElectronIDCollection> eidHandle;
@@ -255,8 +255,8 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     if (topEleID!=0) selEle.push_back(topElectronsH->at(ie));
     if (topEleID!=0 && tkIso<1 && caloIso < 3) isoEle.push_back(topElectronsH->at(ie));
   }
-  std::vector<reco::GenParticleCandidate> genPrimEles=getGenPrimEles(genParHandle);
-  //std::vector<reco::Candidate> genPrimEles=getGenPrimEles(genParHandle);
+  std::vector<reco::GenParticle> genPrimEles=getGenPrimEles(genParHandle);
+  //std::vector<reco::GenParticle> genPrimEles=getGenPrimEles(genParHandle);
   for (uint32_t ip=0;ip<genPrimEles.size();ip++) {
     
     //require the gen ele to be within eta 2.4
@@ -391,6 +391,8 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      genJetsEt_->Fill(genJet.et());
      genJetsEta_->Fill(genJet.eta());
      genJetsEtVsEta_->Fill(genJet.eta(),genJet.et());
+     // switch to 'genParticle here, as soon as this also happens in the 'GenJet' class:
+//      std::vector<const reco::GenParticle *> genJetConst=genJet.getConstituents();
      std::vector<const reco::GenParticleCandidate *> genJetConst=genJet.getConstituents();
      if (genJet.et()>5 && fabs(genJet.eta()<5)) nGenJets++;
    }
@@ -408,7 +410,7 @@ TQAFLayer1Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& i
      double caloIso=topMuonsH->at(im).getCaloIso();
      if (tkIso<MUON_TKISOCUT && caloIso < MUON_CALOISOCUT) isoMuons.push_back(topMuonsH->at(im));
    }
-   std::vector<reco::GenParticleCandidate> genPrimMuons=getGenPrimMuons(genParHandle);
+   std::vector<reco::GenParticle> genPrimMuons=getGenPrimMuons(genParHandle);
    for (uint32_t ip=0;ip<genPrimMuons.size();ip++) {
      
      //require the gen muon to be within eta acceptance
@@ -480,22 +482,22 @@ bool TQAFLayer1Validation::findDuplicates(edm::Handle<std::vector<TopElectron> >
 //that means the electrons that come from the W or Z
 //in practice that means the electrons that come from the electrons that come from the W of Z
 // (so after any FSR)
-std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimEles(edm::Handle<reco::CandidateCollection> genParHandle) {
+std::vector<reco::GenParticle> TQAFLayer1Validation::getGenPrimEles(edm::Handle<reco::GenParticleCollection> genParHandle) {
   
-  std::vector<reco::GenParticleCandidate> output;
+  std::vector<reco::GenParticle> output;
   for (uint32_t ip=0;ip<genParHandle->size();ip++) {
     if (abs((*genParHandle)[ip].pdgId())!=11) continue;
     if ((*genParHandle)[ip].status()!=1) continue;
     if ((*genParHandle)[ip].numberOfMothers()<1) continue;
-    if (abs((*genParHandle)[ip].mother()->pdgId())!=11) continue;
-    if ((*genParHandle)[ip].mother()->numberOfMothers()<1) continue;
-    if (abs((*genParHandle)[ip].mother()->mother()->pdgId())!=23 &&
-	abs((*genParHandle)[ip].mother()->mother()->pdgId())!=24) continue;
+    if (abs((*genParHandle)[ip].mother(0)->pdgId())!=11) continue;
+    if ((*genParHandle)[ip].mother(0)->numberOfMothers()<1) continue;
+    if (abs((*genParHandle)[ip].mother(0)->mother(0)->pdgId())!=23 &&
+	abs((*genParHandle)[ip].mother(0)->mother(0)->pdgId())!=24) continue;
     //yikes, now we finally have electrons whose mothers are electrons whose mothers are Ws or Zs
-    //reco::GenParticleCandidate tmp=static_cast<reco::GenParticleCandidate> ((*genParHandle)[ip]);
+    //reco::GenParticle tmp=static_cast<reco::GenParticle> ((*genParHandle)[ip]);
     //output.push_back((*genParHandle)[ip]);
-    //reco::GenParticleCandidate tmp=(reco::GenParticleCandidate) ((*genParHandle)[ip]);
-    reco::GenParticleCandidate tmp = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&(*genParHandle)[ip])));
+    //reco::GenParticle tmp=(reco::GenParticle) ((*genParHandle)[ip]);
+    reco::GenParticle tmp = *(dynamic_cast<reco::GenParticle *>(const_cast<reco::GenParticle *>(&(*genParHandle)[ip])));
     output.push_back(tmp);
   }
   return output;
@@ -506,20 +508,20 @@ std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimEles(edm
 //that means the muons that come from the W or Z
 //in practice that means the muons that come from the muons that come from the W or the Z
 // (so after any FSR)
-std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimMuons(edm::Handle<reco::CandidateCollection> genParHandle) {
+std::vector<reco::GenParticle> TQAFLayer1Validation::getGenPrimMuons(edm::Handle<reco::GenParticleCollection> genParHandle) {
   
-  std::vector<reco::GenParticleCandidate> output;
+  std::vector<reco::GenParticle> output;
   for (uint32_t ip=0;ip<genParHandle->size();ip++) {
     if (abs((*genParHandle)[ip].pdgId())!=13) continue;
     if ((*genParHandle)[ip].status()!=1) continue;
     if ((*genParHandle)[ip].numberOfMothers()<1) continue;
-    if (abs((*genParHandle)[ip].mother()->pdgId())!=13) continue;
-    if ((*genParHandle)[ip].mother()->numberOfMothers()<1) continue;
-    if (abs((*genParHandle)[ip].mother()->mother()->pdgId())!=23 &&
-	abs((*genParHandle)[ip].mother()->mother()->pdgId())!=24
+    if (abs((*genParHandle)[ip].mother(0)->pdgId())!=13) continue;
+    if ((*genParHandle)[ip].mother(0)->numberOfMothers()<1) continue;
+    if (abs((*genParHandle)[ip].mother(0)->mother(0)->pdgId())!=23 &&
+	abs((*genParHandle)[ip].mother(0)->mother(0)->pdgId())!=24
 	) continue;
     //yikes, now we finally have muons whose mothers are muons whose mothers are Ws
-    reco::GenParticleCandidate tmp = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&(*genParHandle)[ip])));
+    reco::GenParticle tmp = *(dynamic_cast<reco::GenParticle *>(const_cast<reco::GenParticle *>(&(*genParHandle)[ip])));
     output.push_back(tmp);
   }
   return output;
@@ -529,17 +531,17 @@ std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenPrimMuons(ed
 
 //get the vector of gen-level particles who's mother's mother's are W's.  So this should be the W decay products after FSR.
 //the vector is guaranteed to be ordered such that the decay products of the W+ come before that of the W-
-std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenWDecayProds(edm::Handle<reco::CandidateCollection> genParHandle) {
+std::vector<reco::GenParticle> TQAFLayer1Validation::getGenWDecayProds(edm::Handle<reco::GenParticleCollection> genParHandle) {
   
-  std::vector<reco::GenParticleCandidate> output;
+  std::vector<reco::GenParticle> output;
   //first the W+
   for (uint32_t ip=0;ip<genParHandle->size();ip++) {
     if ((*genParHandle)[ip].status()!=1) continue;
     if ((*genParHandle)[ip].numberOfMothers()<1) continue;
-    if ((*genParHandle)[ip].mother()->numberOfMothers()<1) continue;
-    if ((*genParHandle)[ip].mother()->mother()->pdgId()!=24) continue;
+    if ((*genParHandle)[ip].mother(0)->numberOfMothers()<1) continue;
+    if ((*genParHandle)[ip].mother(0)->mother(0)->pdgId()!=24) continue;
 
-    reco::GenParticleCandidate tmp = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&(*genParHandle)[ip])));
+    reco::GenParticle tmp = *(dynamic_cast<reco::GenParticle *>(const_cast<reco::GenParticle *>(&(*genParHandle)[ip])));
     output.push_back(tmp);
     //break the first loop if got the two W+ decay products
     if (output.size()==2) break;
@@ -548,10 +550,10 @@ std::vector<reco::GenParticleCandidate> TQAFLayer1Validation::getGenWDecayProds(
   for (uint32_t ip=0;ip<genParHandle->size();ip++) {
     if ((*genParHandle)[ip].status()!=1) continue;
     if ((*genParHandle)[ip].numberOfMothers()<1) continue;
-    if ((*genParHandle)[ip].mother()->numberOfMothers()<1) continue;
-    if ((*genParHandle)[ip].mother()->mother()->pdgId()!=-24) continue;
+    if ((*genParHandle)[ip].mother(0)->numberOfMothers()<1) continue;
+    if ((*genParHandle)[ip].mother(0)->mother(0)->pdgId()!=-24) continue;
 
-    reco::GenParticleCandidate tmp = *(dynamic_cast<reco::GenParticleCandidate *>(const_cast<reco::Candidate *>(&(*genParHandle)[ip])));
+    reco::GenParticle tmp = *(dynamic_cast<reco::GenParticle *>(const_cast<reco::GenParticle *>(&(*genParHandle)[ip])));
     output.push_back(tmp);
     //break the first loop if got the two W- products
     if (output.size()==4) break;
@@ -660,7 +662,7 @@ std::pair<float,size_t> TQAFLayer1Validation::calcMinDR(reco::Particle par, std:
 
 //this function "classifies" the event at generator level, returning an integer code according to the production
 //process (QCD, W, Z, ttbar) and decay mode.  returns 0 for anything it can't figure out.
-uint32_t TQAFLayer1Validation::classifyEvent(const reco::CandidateCollection &genPars) {
+uint32_t TQAFLayer1Validation::classifyEvent(const reco::GenParticleCollection &genPars) {
   
   //first, check for tops and W in the doc lines
   int nTop=0;
