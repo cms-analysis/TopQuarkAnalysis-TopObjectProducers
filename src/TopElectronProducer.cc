@@ -1,5 +1,5 @@
 //
-// $Id: TopElectronProducer.cc,v 1.30 2008/01/25 13:54:50 vadler Exp $
+// $Id: TopElectronProducer.cc,v 1.31 2008/01/31 17:52:59 lowette Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopElectronProducer.h"
@@ -19,38 +19,41 @@
 #include <memory>
 
 
-TopElectronProducer::TopElectronProducer(const edm::ParameterSet & iConfig) {
-
+TopElectronProducer::TopElectronProducer(const edm::ParameterSet & iConfig) 
+{
   // general configurables
-  electronSrc_      = iConfig.getParameter<edm::InputTag>( "electronSource" );
+  electronSrc_ = iConfig.getParameter<edm::InputTag>( "electronSource" );
   // ghost removal configurable
-  doGhostRemoval_   = iConfig.getParameter<bool>         ( "removeDuplicates" );
+  doGhostRemoval_ = iConfig.getParameter<bool>( "removeDuplicates" );
   // MC matching configurables
-  addGenMatch_      = iConfig.getParameter<bool>         ( "addGenMatch" );
-  genPartSrc_       = iConfig.getParameter<edm::InputTag>( "genParticleSource" );
-  maxDeltaR_        = iConfig.getParameter<double>       ( "maxDeltaR" );
-  minRecoOnGenEt_   = iConfig.getParameter<double>       ( "minRecoOnGenEt" );
-  maxRecoOnGenEt_   = iConfig.getParameter<double>       ( "maxRecoOnGenEt" );
+  addGenMatch_    = iConfig.getParameter<bool>( "addGenMatch" );
+  genPartSrc_     = iConfig.getParameter<edm::InputTag>( "genParticleSource" );
+  maxDeltaR_      = iConfig.getParameter<double>( "maxDeltaR" );
+  minRecoOnGenEt_ = iConfig.getParameter<double>( "minRecoOnGenEt" );
+  maxRecoOnGenEt_ = iConfig.getParameter<double>( "maxRecoOnGenEt" );
   // resolution configurables
-  addResolutions_   = iConfig.getParameter<bool>         ( "addResolutions" );
-  useNNReso_        = iConfig.getParameter<bool>         ( "useNNResolutions" );
-  electronResoFile_ = iConfig.getParameter<std::string>  ( "electronResoFile" );
+  addResolutions_   = iConfig.getParameter<bool>( "addResolutions" );
+  useNNReso_        = iConfig.getParameter<bool>( "useNNResolutions" );
+  electronResoFile_ = iConfig.getParameter<std::string>( "electronResoFile" );
   // isolation configurables
-  addTrkIso_        = iConfig.getParameter<bool>         ( "addTrkIsolation" );
-  tracksSrc_        = iConfig.getParameter<edm::InputTag>( "tracksSource" );
-  addCalIso_        = iConfig.getParameter<bool>         ( "addCalIsolation" );
-  towerSrc_         = iConfig.getParameter<edm::InputTag>( "towerSource" );
+  addTrkIso_ = iConfig.getParameter<bool>( "addTrkIsolation" );
+  tracksSrc_ = iConfig.getParameter<edm::InputTag>( "tracksSource" );
+  addCalIso_ = iConfig.getParameter<bool>( "addCalIsolation" );
+  towerSrc_  = iConfig.getParameter<edm::InputTag>( "towerSource" );
   // electron ID configurables
-  addElecID_        = iConfig.getParameter<bool>         ( "addElectronID" );
-  elecIDSrc_        = iConfig.getParameter<edm::InputTag>( "electronIDSource" );
-  addElecIDRobust_  = iConfig.getParameter<bool>         ( "addElectronIDRobust" );
-  elecIDRobustSrc_  = iConfig.getParameter<edm::InputTag>( "electronIDRobustSource" );
-  
+  addElecIDCut_      = iConfig.getParameter<bool>( "addElectronID" );
+  elecIDSrcCutRobust_= iConfig.getParameter<edm::InputTag>( "electronIDSourceCutRobust" );
+  elecIDSrcCutMedium_= iConfig.getParameter<edm::InputTag>( "electronIDSourceCutMedium" );
+  elecIDSrcCutTight_ = iConfig.getParameter<edm::InputTag>( "electronIDSourceCutTight"  );
+  addElecIDTDR_      = iConfig.getParameter<bool>( "addElectronIDTDR" );
+  elecIDSrcTDRRobust_= iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRRobust" );
+  elecIDSrcTDRMedium_= iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRMedium" );
+  elecIDSrcTDRTight_ = iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRTight"  );  
   // likelihood ratio configurables
-  addLRValues_      = iConfig.getParameter<bool>         ( "addLRValues" );
-  electronLRFile_   = iConfig.getParameter<std::string>  ( "electronLRFile" );
+  addLRValues_    = iConfig.getParameter<bool>( "addLRValues" );
+  electronLRFile_ = iConfig.getParameter<std::string>( "electronLRFile" );
   // configurables for isolation from egamma producer
-  addEgammaIso_     = iConfig.getParameter<bool>         ( "addEgammaIso");
+  addEgammaIso_     = iConfig.getParameter<bool>( "addEgammaIso");
   egammaTkIsoSrc_   = iConfig.getParameter<edm::InputTag>( "egammaTkIsoSource");
   egammaTkNumIsoSrc_= iConfig.getParameter<edm::InputTag>( "egammaTkNumIsoSource");
   egammaEcalIsoSrc_ = iConfig.getParameter<edm::InputTag>( "egammaEcalIsoSource");
@@ -115,13 +118,25 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
   }
   
   // prepare ID extraction
-  edm::Handle<reco::ElectronIDAssociationCollection> elecIDs;
-  if (addElecID_) iEvent.getByLabel(elecIDSrc_, elecIDs);
-  edm::Handle<reco::ElectronIDAssociationCollection> elecIDRobusts;
-  if (addElecIDRobust_) iEvent.getByLabel(elecIDRobustSrc_, elecIDRobusts);
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutRobust;
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutMedium;
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutTight;
+  if (addElecIDCut_){
+    iEvent.getByLabel(elecIDSrcCutRobust_, elecIDsCutRobust);
+    iEvent.getByLabel(elecIDSrcCutMedium_, elecIDsCutMedium);
+    iEvent.getByLabel(elecIDSrcCutTight_,  elecIDsCutTight );
+  }
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRRobust;
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRMedium;
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRTight;
+  if (addElecIDTDR_){
+    iEvent.getByLabel(elecIDSrcTDRRobust_, elecIDsTDRRobust);
+    iEvent.getByLabel(elecIDSrcTDRMedium_, elecIDsTDRMedium);
+    iEvent.getByLabel(elecIDSrcTDRTight_,  elecIDsTDRTight );
+  }
   
   // prepare LR calculation
-  if(addLRValues_) {
+  if (addLRValues_) {
     theLeptonLRCalc_= new TopLeptonLRCalc(iSetup, edm::FileInPath(electronLRFile_).fullPath(), "", "");
   }
 
@@ -150,11 +165,16 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
       setEgammaIso(anElectron,electronsHandle,tkIsoHandle,tkNumIsoHandle,ecalIsoHandle,hcalIsoHandle,e);
     }
     // add electron ID info
-    if (addElecID_) {
-      anElectron.setLeptonID(electronID(electronsHandle, elecIDs, e));
+    if (addElecIDCut_) {
+      //anElectron.setLeptonID(electronID(electronsHandle, elecIDsCutTight, e));
+      anElectron.setLeptonIDCutRobust(electronID(electronsHandle, elecIDsCutRobust, e));
+      anElectron.setLeptonIDCutMedium(electronID(electronsHandle, elecIDsCutMedium, e));
+      anElectron.setLeptonIDCutTight (electronID(electronsHandle, elecIDsCutTight,  e));
     }
-    if (addElecIDRobust_) {
-      anElectron.setElectronIDRobust(electronID(electronsHandle, elecIDRobusts, e));
+    if (addElecIDTDR_) {
+      anElectron.setLeptonIDTDRRobust(electronID(electronsHandle, elecIDsTDRRobust, e));
+      anElectron.setLeptonIDTDRMedium(electronID(electronsHandle, elecIDsTDRMedium, e));
+      anElectron.setLeptonIDTDRTight (electronID(electronsHandle, elecIDsTDRTight,  e));
     }
     // add lepton LR info
     if (addLRValues_) {
