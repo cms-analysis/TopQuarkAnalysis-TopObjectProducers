@@ -1,5 +1,5 @@
 //
-// $Id: TopElectronProducer.cc,v 1.31 2008/01/31 17:52:59 lowette Exp $
+// $Id: TopElectronProducer.cc,v 1.31.2.1 2008/03/17 15:35:17 rwolf Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopElectronProducer.h"
@@ -43,10 +43,10 @@ TopElectronProducer::TopElectronProducer(const edm::ParameterSet & iConfig)
   // electron ID configurables
   addElecIDCut_      = iConfig.getParameter<bool>( "addElectronID" );
   elecIDSrcCutRobust_= iConfig.getParameter<edm::InputTag>( "electronIDSourceCutRobust" );
-  elecIDSrcCutMedium_= iConfig.getParameter<edm::InputTag>( "electronIDSourceCutMedium" );
+  elecIDSrcCutLoose_ = iConfig.getParameter<edm::InputTag>( "electronIDSourceCutLoose"  );
   elecIDSrcCutTight_ = iConfig.getParameter<edm::InputTag>( "electronIDSourceCutTight"  );
   addElecIDTDR_      = iConfig.getParameter<bool>( "addElectronIDTDR" );
-  elecIDSrcTDRRobust_= iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRRobust" );
+  elecIDSrcTDRLoose_ = iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRLoose"  );
   elecIDSrcTDRMedium_= iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRMedium" );
   elecIDSrcTDRTight_ = iConfig.getParameter<edm::InputTag>( "electronIDSourceTDRTight"  );  
   // likelihood ratio configurables
@@ -119,18 +119,18 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
   
   // prepare ID extraction
   edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutRobust;
-  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutMedium;
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutLoose;
   edm::Handle<reco::ElectronIDAssociationCollection> elecIDsCutTight;
   if (addElecIDCut_){
     iEvent.getByLabel(elecIDSrcCutRobust_, elecIDsCutRobust);
-    iEvent.getByLabel(elecIDSrcCutMedium_, elecIDsCutMedium);
+    iEvent.getByLabel(elecIDSrcCutLoose_,  elecIDsCutLoose );
     iEvent.getByLabel(elecIDSrcCutTight_,  elecIDsCutTight );
   }
-  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRRobust;
+  edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRLoose;
   edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRMedium;
   edm::Handle<reco::ElectronIDAssociationCollection> elecIDsTDRTight;
   if (addElecIDTDR_){
-    iEvent.getByLabel(elecIDSrcTDRRobust_, elecIDsTDRRobust);
+    iEvent.getByLabel(elecIDSrcTDRLoose_,  elecIDsTDRLoose );
     iEvent.getByLabel(elecIDSrcTDRMedium_, elecIDsTDRMedium);
     iEvent.getByLabel(elecIDSrcTDRTight_,  elecIDsTDRTight );
   }
@@ -168,11 +168,11 @@ void TopElectronProducer::produce(edm::Event & iEvent, const edm::EventSetup & i
     if (addElecIDCut_) {
       //anElectron.setLeptonID(electronID(electronsHandle, elecIDsCutTight, e));
       anElectron.setLeptonIDCutRobust(electronID(electronsHandle, elecIDsCutRobust, e));
-      anElectron.setLeptonIDCutMedium(electronID(electronsHandle, elecIDsCutMedium, e));
+      anElectron.setLeptonIDCutLoose (electronID(electronsHandle, elecIDsCutLoose,  e));
       anElectron.setLeptonIDCutTight (electronID(electronsHandle, elecIDsCutTight,  e));
     }
     if (addElecIDTDR_) {
-      anElectron.setLeptonIDTDRRobust(electronID(electronsHandle, elecIDsTDRRobust, e));
+      anElectron.setLeptonIDTDRLoose (electronID(electronsHandle, elecIDsTDRLoose,  e));
       anElectron.setLeptonIDTDRMedium(electronID(electronsHandle, elecIDsTDRMedium, e));
       anElectron.setLeptonIDTDRTight (electronID(electronsHandle, elecIDsTDRTight,  e));
     }
