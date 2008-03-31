@@ -1,5 +1,5 @@
 //
-// $Id: TopJetProducer.cc,v 1.39 2008/01/10 13:40:32 jandrea Exp $
+// $Id: TopJetProducer.cc,v 1.40 2008/01/25 13:54:51 vadler Exp $
 //
 
 #include "TopQuarkAnalysis/TopObjectProducers/interface/TopJetProducer.h"
@@ -211,7 +211,7 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
           // matching with hard-cut at 0.4
           // can be improved a la muon-electron, such that each parton
           // maximally matches 1 jet, but this requires two loops
-          if (bestDR == 0 || (currDR < bestDR || currDR < 0.4)) {
+          if (bestDR == 0 || (currDR < bestDR && currDR < 0.4)) {
             bestParton = aParton;
             bestDR = currDR;
           }
@@ -232,7 +232,7 @@ void TopJetProducer::produce(edm::Event & iEvent, const edm::EventSetup & iSetup
           // matching with hard-cut at 0.4
           // can be improved a la muon-electron, such that each genjet
           // maximally matches 1 jet, but this requires two loops
-          if (bestDR == 0 || (currDR < bestDR || currDR < 0.4)) {
+          if (bestDR == 0 || (currDR < bestDR && currDR < 0.4)) {
             bestGenJet = *itGenJet;
             bestDR = currDR;
           }
