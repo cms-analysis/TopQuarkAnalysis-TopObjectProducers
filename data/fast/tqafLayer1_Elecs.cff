@@ -1,0 +1,24 @@
+# PATLayer1 Electron input
+  replace allLayer1Electrons.electronSource         = allLayer0Electrons
+  replace allLayer1Electrons.addGenMatch            = true
+  replace allLayer1Electrons.genParticleMatch       = electronMatch
+  replace allLayer1Electrons.addTrigMatch           = false
+# replace allLayer1Electrons.trigPrimMatch          = { electronTrigMatchHLT1ElectronRelaxed,
+#                                                       electronTrigMatchCandHLT1ElectronStartup }
+  replace allLayer1Electrons.addResolutions         = true
+  replace allLayer1Electrons.useNNResolutions       = false
+  replace allLayer1Electrons.electronResoFile       = "PhysicsTools/PatUtils/data/Resolutions_electron.root"
+  replace allLayer1Electrons.tracksSource           = generalTracks
+  replace allLayer1Electrons.isolation.tracker.src  = layer0ElectronIsolations:eleIsoDepositTk
+  replace allLayer1Electrons.isolation.ecal.src     = layer0ElectronIsolations:eleIsoDepositEcalFromClusts
+  replace allLayer1Electrons.isolation.hcal.src     = layer0ElectronIsolations:eleIsoDepositHcalFromTowers
+  replace allLayer1Electrons.isolation.user = { }
+  replace allLayer1Electrons.isoDeposits.tracker    = layer0ElectronIsolations:eleIsoDepositTk
+  replace allLayer1Electrons.isoDeposits.ecal       = layer0ElectronIsolations:eleIsoDepositEcalFromClusts
+  replace allLayer1Electrons.isoDeposits.hcal       = layer0ElectronIsolations:eleIsoDepositHcalFromTowers
+  replace allLayer1Electrons.addElectronID          = true
+
+# PATLayer1 Electron selection
+  replace selectedLayer1Electrons.src  = allLayer1Electrons
+# replace selectedLayer1Electrons.cut  = "pt > 10. & abs(eta) < 2.4 & trackIso < 3 & caloIso < 6 & leptonID > 0.99"
+  replace selectedLayer1Electrons.cut  = "pt > 10. & abs(eta) < 2.4 & trackIso < 3 & caloIso < 6"

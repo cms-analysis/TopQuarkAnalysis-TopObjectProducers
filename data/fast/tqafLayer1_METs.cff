@@ -1,0 +1,13 @@
+# PATLayer1 MET input
+  replace allLayer1METs.metSource          = allLayer0METs
+  replace allLayer1METs.addGenMET          = true
+  replace allLayer1METs.genMETSource       = genMet
+  replace allLayer1METs.addTrigMatch       = false
+# replace allLayer1METs.trigPrimMatch      = { metTrigMatchHLT1MET65 }
+  replace allLayer1METs.addResolutions     = true
+  replace allLayer1METs.useNNResolutions   = false
+  replace allLayer1METs.metResoFile        = "PhysicsTools/PatUtils/data/Resolutions_met.root"
+
+# PATLayer1 MET selection
+  replace selectedLayer1METs.src = allLayer1METs
+  replace selectedLayer1METs.cut = "et > 0."

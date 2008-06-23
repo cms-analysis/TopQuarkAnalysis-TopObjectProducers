@@ -1,0 +1,21 @@
+# PATLayer1 Muon input
+  replace allLayer1Muons.muonSource            = allLayer0Muons
+  replace allLayer1Muons.addGenMatch           = true
+  replace allLayer1Muons.genParticleMatch      = muonMatch
+  replace allLayer1Muons.addResolutions        = true
+  replace allLayer1Muons.useNNResolutions      = false
+  replace allLayer1Muons.muonResoFile          = "PhysicsTools/PatUtils/data/Resolutions_muon.root"
+  replace allLayer1Muons.addTrigMatch          = false
+  replace allLayer1Muons.isolation.tracker.src = layer0MuonIsolations:muParamGlobalIsoDepositTk
+  replace allLayer1Muons.isolation.ecal.src    = layer0MuonIsolations:muParamGlobalIsoDepositCalByAssociatorTowersecal
+  replace allLayer1Muons.isolation.hcal.src    = layer0MuonIsolations:muParamGlobalIsoDepositCalByAssociatorTowershcal
+  replace allLayer1Muons.isolation.user        = { { bool placeholder = true } }
+  replace allLayer1Muons.isoDeposits.tracker   = layer0MuonIsolations:muParamGlobalIsoDepositTk
+  replace allLayer1Muons.isoDeposits.ecal      = layer0MuonIsolations:muParamGlobalIsoDepositCalByAssociatorTowersecal
+  replace allLayer1Muons.isoDeposits.hcal      = layer0MuonIsolations:muParamGlobalIsoDepositCalByAssociatorTowershcal
+  replace allLayer1Muons.isoDeposits.user      = { layer0MuonIsolations:muParamGlobalIsoDepositCalByAssociatorTowersho }
+  replace allLayer1Muons.addMuonID             = true
+
+# PATLayer1 Muon selection
+  replace selectedLayer1Muons.src  = allLayer1Muons
+  replace selectedLayer1Muons.cut  = "pt > 10. & abs(eta) < 2.4 & trackIso < 3 & caloIso < 5"

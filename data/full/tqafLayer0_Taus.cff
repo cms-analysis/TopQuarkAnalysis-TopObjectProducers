@@ -1,0 +1,14 @@
+# PATLayer0 Tau input
+  replace allLayer0Taus.tauSource              = pfRecoTauProducer
+  replace allLayer0Taus.tauDiscriminatorSource = pfRecoTauDiscriminationByIsolation
+
+# PATLayer0 Tau matching
+  replace tauMatch.src                         = allLayer0Taus
+  replace tauMatch.matched                     = genParticles
+  replace tauMatch.maxDeltaR                   = 5
+  replace tauMatch.maxDPtRel                   = 99
+  replace tauMatch.resolveAmbiguities          = true
+  replace tauMatch.resolveByMatchQuality       = false
+  replace tauMatch.checkCharge                 = true
+  replace tauMatch.mcPdgId                     = { 15 }
+  replace tauMatch.mcStatus                    = { 2 }
