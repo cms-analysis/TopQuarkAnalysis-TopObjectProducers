@@ -36,6 +36,20 @@ process.options = cms.untracked.PSet(
 ## std sequence for tqaf layer1
 process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_fast_cff")
 
+## reconfiguration for fastsim
+from PhysicsTools.PatAlgos.famos import patLayer0_FamosSetup_cff
+from PhysicsTools.PatAlgos.famos import patLayer1_FamosSetup_cff
+patLayer0_FamosSetup_cff.setup(process)
+patLayer1_FamosSetup_cff.setup(process)
+
+#-------------------------------------------------
+# process paths;
+#-------------------------------------------------
+
+## process path
+process.p = cms.Path(process.famosWithEverythingPAT *
+                     process.tqafLayer1_withoutTrigMatch)
+
 #-------------------------------------------------
 # tqaf event content; first ALL objects are
 # dropped in this process; then tqafLayer1
@@ -79,9 +93,6 @@ process.out = cms.OutputModule("PoolOutputModule",
 # persistent output to file comment the the output
 # path
 #-------------------------------------------------
-
-## process path
-process.p = cms.Path(process.famosWithEverythingPAT*process.tqafLayer1_withoutTrigMatch)
 
 ## output
 process.outpath = cms.EndPath(process.out)

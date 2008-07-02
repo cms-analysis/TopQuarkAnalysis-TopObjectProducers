@@ -37,6 +37,13 @@ process.options = cms.untracked.PSet(
 process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_full_cff")
 
 #-------------------------------------------------
+# process paths;
+#-------------------------------------------------
+
+## process path
+process.p = cms.Path(process.tqafLayer1)
+
+#-------------------------------------------------
 # tqaf event content; first ALL objects are
 # dropped in this process; then tqafLayer1
 # concent is added
@@ -50,7 +57,6 @@ process.tqafEventContent = cms.PSet(
 ## define tqaf layer1 event content
 process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff")
 process.tqafEventContent.outputCommands.extend(process.patLayer1EventContent.outputCommands)
-
 
 #-------------------------------------------------
 # process output; first the event selection is
@@ -77,12 +83,9 @@ process.out = cms.OutputModule("PoolOutputModule",
 
 #-------------------------------------------------
 # output paths; in order not to write the
-# persistent output to file comment the the output
+# persistent output to file comment the output
 # path
 #-------------------------------------------------
-
-## process path
-process.p = cms.Path(process.tqafLayer1)
 
 ## output
 process.outpath = cms.EndPath(process.out)
