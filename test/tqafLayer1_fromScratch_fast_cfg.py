@@ -29,6 +29,9 @@ process.options = cms.untracked.PSet(
     wantSummary = cms.untracked.bool(True)
 )
 
+## load magnetic field
+process.load("Configuration.StandardSequences.MagneticField_cff")
+
 #-------------------------------------------------
 # tqaf configuration
 #-------------------------------------------------
