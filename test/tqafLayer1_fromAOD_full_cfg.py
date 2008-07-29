@@ -4,7 +4,7 @@ import FWCore.ParameterSet.Config as cms
 # test cfg file for tqaflayer1 production from
 # fullsim
 #-------------------------------------------------
-process = cms.Process("TQAF")
+process = cms.Process("TEST")
 
 ## add message logger
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
