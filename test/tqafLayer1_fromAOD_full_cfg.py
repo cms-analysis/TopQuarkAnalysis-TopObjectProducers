@@ -33,7 +33,7 @@ process.source = cms.Source("PoolSource",
 
 ## define maximal number of events to loop over
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(1100)
+    input = cms.untracked.int32(100)
 )
 
 ## configure process options
@@ -83,8 +83,8 @@ process.tqafEventContent = cms.PSet(
 process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff")
 process.tqafEventContent.outputCommands.extend(process.patLayer1EventContent.outputCommands)
 
-#from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_genParticles_cff import *   ## pruned genParticles which contain only information
-#tqafLayer1GenParticles(process)                                                 ## relevant for the TopGenEvnet and stable particles
+from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_genParticles_cff import *   ## pruned genParticles which contain only information
+tqafLayer1GenParticles(process)                                                 ## relevant for the TopGenEvnet and stable particles
 
 from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_jetCollections_cff import * ## jet collections of interest for the Top PAG and top
 tqafLayer1JetCollections(process)                                               ## analyses
