@@ -74,21 +74,24 @@ process.p = cms.Path(process.tqafLayer1)
 # concent is added
 #-------------------------------------------------
 
-## define event content
-process.tqafEventContent = cms.PSet(
-    outputCommands = cms.untracked.vstring('drop *')
-)
-
 ## define tqaf layer1 event content
-process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff")
-process.tqafEventContent.outputCommands.extend(process.patLayer1EventContent.outputCommands)
+from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff import *
+tqafLayer1EventContent(process)
 
-from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_genParticles_cff import *   ## pruned genParticles which contain only information
-tqafLayer1GenParticles(process)                                                 ## relevant for the TopGenEvnet and stable particles
+#
+# more or changed jet collections
+#
+from PhysicsTools.PatAlgos.tools.jetTools import *
 
-from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_jetCollections_cff import * ## jet collections of interest for the Top PAG and top
-tqafLayer1JetCollections(process)                                               ## analyses
-
+switchJetCollection(process, 
+                    'sisCone5CaloJets',      # jet collection; must be already in the event when patLayer0 sequence is executed
+                    layers       = [0,1],    # if you're not running patLayer1, set 'layers=[0]' 
+                    runCleaner   = "CaloJet",# =None if not to clean
+                    doJTA        = True,     # run jet-track association & JetCharge
+                    doBTagging   = True,     # run b-tagging
+                    jetCorrLabel = 'Scone5', # example jet correction name; set to None for no JEC
+                    doType1MET   = True      # recompute Type1 MET using these jets
+                    )
 
 #-------------------------------------------------
 # process output; first the event selection is

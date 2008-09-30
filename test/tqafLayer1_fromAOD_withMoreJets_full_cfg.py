@@ -16,7 +16,19 @@ process.MessageLogger.cerr.threshold = 'INFO'
 
 ## define input
 process.source = cms.Source("PoolSource",
-    fileNames = cms.untracked.vstring('file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_1_X_2008-07-08_STARTUP_V4-AODSIM.100.root')
+    fileNames = cms.untracked.vstring(
+   #PAT test sample
+   #'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_1_X_2008-07-08_STARTUP_V4-AODSIM.100.root'
+   #210 RelVal sample
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/061DC5C9-8962-DD11-AB87-001617C3B5F4.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/1846FB92-8B62-DD11-BF46-001617C3B5D8.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/28BA9967-8A62-DD11-8CBC-001617C3B6CC.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/3CE74890-8A62-DD11-A309-001617C3B79A.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/6CE93E47-E262-DD11-99D9-000423D6BA18.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/8404EE20-8B62-DD11-A6AD-001617C3B6C6.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/A2111BED-8E62-DD11-9AB8-000423D98804.root',
+    'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_0/RelValTTbar/GEN-SIM-RECO/STARTUP_V4_v3/0001/DEFB6B46-8C62-DD11-8643-001617C3B79A.root'
+    )
 )
 
 ## define maximal number of events to loop over
@@ -48,44 +60,6 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_full_cff")
 
 
-## add more jet collections to the tqaf layer1
-from PhysicsTools.PatAlgos.tools.jetTools import *
-
-## add sisCone5CaloJets
-addJetCollection(process,
-                 'sisCone5CaloJets',
-                 'SisCone5Calo',
-                 runCleaner="CaloJet",
-                 doJTA=True,doBTagging=True,
-                 jetCorrLabel='Scone5',
-                 doType1MET=True,
-                 doL1Counters=False
-                 )
-
-## add kt6CaloJets
-addJetCollection(process,
-                 'kt6CaloJets',
-                 'Kt6Calo',
-                 runCleaner=None,
-                 doJTA=True,
-                 doBTagging=False,
-                 jetCorrLabel=None,
-                 doType1MET=True,
-                 doL1Counters=False
-                 )
-
-## add icone5PFJets
-addJetCollection(process,
-                 'iterativeCone5PFJets',
-                 'Icone5PFlow',
-                 runCleaner=None,
-                 doJTA=True,
-                 doBTagging=True,
-                 jetCorrLabel=None,
-                 doType1MET=True,
-                 doL1Counters=False
-                 )
-
 #-------------------------------------------------
 # process paths;
 #-------------------------------------------------
@@ -100,17 +74,28 @@ process.p = cms.Path(process.tqafLayer1)
 # concent is added
 #-------------------------------------------------
 
-## define event content
-process.tqafEventContent = cms.PSet(
-    outputCommands = cms.untracked.vstring('drop *')
-)
-
 ## define tqaf layer1 event content
-process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff")
-process.tqafEventContent.outputCommands.extend(process.patLayer1EventContent.outputCommands)
-## keep the additionally produced jet
-## collections in the event record
-process.tqafEventContent.outputCommands.extend(["keep *_selectedLayer1Jets*_*_*"])
+from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff   import *
+tqafLayer1EventContent(process)
+
+#
+# more or changed jet collections
+#
+
+## add more jet collections to the tqaf layer1
+from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_jetCollections_cff import *
+tqafLayer1JetCollections(process)
+
+## switch jet collection from iCone5 tot sisCone5
+switchJetCollection(process, 
+                    'sisCone5CaloJets',      # jet collection; must be already in the event when patLayer0 sequence is executed
+                    layers       = [0,1],    # if you're not running patLayer1, set 'layers=[0]' 
+                    runCleaner   = "CaloJet",# =None if not to clean
+                    doJTA        = True,     # run jet-track association & JetCharge
+                    doBTagging   = True,     # run b-tagging
+                    jetCorrLabel = 'Scone5', # example jet correction name; set to None for no JEC
+                    doType1MET   = True      # recompute Type1 MET using these jets
+                    )
 
 #-------------------------------------------------
 # process output; first the event selection is
