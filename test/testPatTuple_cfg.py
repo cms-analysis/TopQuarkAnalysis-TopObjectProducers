@@ -21,7 +21,9 @@ process.source = cms.Source("PoolSource",
     'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_2_X_2008-11-03-STARTUP_V7-AODSIM.100.root'
    #PAT test sample for 2.1.X
    #'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_1_X_2008-07-08_STARTUP_V4-AODSIM.100.root'
-   #219 RelVal sample
+   #2110 RelVal sample
+   #'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_10/RelValTTbar/GEN-SIM-DIGI-RAW-HLTDEBUG-RECO/STARTUP_V7_v1/0001/E8A52D35-F99A-DD11-8A52-0018F3D09642.root'
+   #219  RelVal sample
    #'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_9/RelValTTbar/GEN-SIM-DIGI-RAW-HLTDEBUG-RECO/STARTUP_V7_v2/0000/16D75F0F-1186-DD11-80B9-000423D98C20.root',
    #'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_9/RelValTTbar/GEN-SIM-DIGI-RAW-HLTDEBUG-RECO/STARTUP_V7_v2/0000/24CD41BB-1A86-DD11-9CDA-000423D98EC8.root',
    #'rfio:/castor/cern.ch/cms/store/relval/CMSSW_2_1_9/RelValTTbar/GEN-SIM-DIGI-RAW-HLTDEBUG-RECO/STARTUP_V7_v2/0000/264D79AA-1786-DD11-9F3C-001617C3B6DC.root',
@@ -113,6 +115,7 @@ process.out = cms.OutputModule("PoolOutputModule",
     process.EventSelection,
     process.patTupleEventContent,
     verbose = cms.untracked.bool(True),
+    dropMetaDataForDroppedData = cms.untracked.bool(True),                           
     fileName = cms.untracked.string('/afs/cern.ch/user/r/rwolf/pccmsuhh05/testPatTuple.root')
 )
 
