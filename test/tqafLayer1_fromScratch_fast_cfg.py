@@ -36,14 +36,11 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 # tqaf configuration
 #-------------------------------------------------
 
+# FAMOS source
+process.load("FastSimulation.Configuration.ttbar_cfi")
+
 ## std sequence for tqaf layer1
 process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_fast_cff")
-
-## reconfiguration for fastsim
-from PhysicsTools.PatAlgos.famos import patLayer0_FamosSetup_cff
-from PhysicsTools.PatAlgos.famos import patLayer1_FamosSetup_cff
-patLayer0_FamosSetup_cff.setup(process)
-patLayer1_FamosSetup_cff.setup(process)
 
 #-------------------------------------------------
 # process paths;
