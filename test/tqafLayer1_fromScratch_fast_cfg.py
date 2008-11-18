@@ -4,7 +4,7 @@ import FWCore.ParameterSet.Config as cms
 # test cfg file for tqaflayer1 production from
 # fastsim
 #-------------------------------------------------
-process = cms.Process("TEST")
+process = cms.Process("TQAF")
 
 ## add message logger
 process.load("FWCore.MessageLogger.MessageLogger_cfi")
@@ -15,6 +15,9 @@ process.MessageLogger.cerr.threshold = 'INFO'
 # is no source; this is called within the fastsim
 # bootstrap
 #-------------------------------------------------
+
+# FAMOS source
+process.load("FastSimulation.Configuration.ttbar_cfi")
 
 ## invoke fastsim bootstrap
 process.load("PhysicsTools.PatAlgos.famos.boostrapWithFamos_cff")
@@ -36,19 +39,21 @@ process.load("Configuration.StandardSequences.MagneticField_cff")
 # tqaf configuration
 #-------------------------------------------------
 
-# FAMOS source
-process.load("FastSimulation.Configuration.ttbar_cfi")
-
 ## std sequence for tqaf layer1
-process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_fast_cff")
+process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_cff")
+
+## switch off trigger matching in pat
+from PhysicsTools.PatAlgos.tools.trigTools import switchLayer1Off
+switchLayer1Off(process)
 
 #-------------------------------------------------
 # process paths;
 #-------------------------------------------------
 
 ## process path
-process.p = cms.Path(process.famosWithEverythingPAT *
-                     process.tqafLayer1_withoutTrigMatch)
+process.p = cms.Path(process.famosWithEverything *
+                     process.tqafLayer1_withoutTrigMatch
+                     )
 
 #-------------------------------------------------
 # tqaf event content; first ALL objects are
@@ -58,21 +63,36 @@ process.p = cms.Path(process.famosWithEverythingPAT *
 
 ## define tqaf layer1 event content
 from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff import *
-tqafLayer1EventContent(process)
+makeTqafLayer1EventContent(process)
 
-#
-# more or changed jet collections
-#
+## uncomment the following two lines and edit the
+## corresponding file to replacegenbParticles by
+## pruned genParticles
+
+#from TopQuarkAnalysis.TopObjectProducers.tools.pruneGenParticles_cff import *
+#tqafPruneGenParticles(process)
+
+#-------------------------------------------------
+# add more and/or change jet collection(s)
+#-------------------------------------------------
 from PhysicsTools.PatAlgos.tools.jetTools import *
 
+## uncomment the following two lines and edit the
+## corresponding file to add more jet collections
+
+#from TopQuarkAnalysis.TopObjectProducers.tools.addJetCollections_cff import *
+#tqafAddJetCollections(process)
+
+## switch pat default jet collection from IC5 to
+## SC5
 switchJetCollection(process, 
-                    'sisCone5CaloJets',      # jet collection; must be already in the event when patLayer0 sequence is executed
-                    layers       = [0,1],    # if you're not running patLayer1, set 'layers=[0]' 
-                    runCleaner   = "CaloJet",# =None if not to clean
-                    doJTA        = True,     # run jet-track association & JetCharge
-                    doBTagging   = True,     # run b-tagging
-                    jetCorrLabel = 'Scone5', # example jet correction name; set to None for no JEC
-                    doType1MET   = True      # recompute Type1 MET using these jets
+                    'sisCone5CaloJets',             # jet collection; must be already in the event when patLayer0 sequence is executed
+                    layers       = [0,1],           # if you're not running patLayer1, set 'layers=[0]' 
+                    runCleaner   = "CaloJet",       # =None if not to clean
+                    doJTA        = True,            # run jet-track association & JetCharge
+                    doBTagging   = True,            # run b-tagging
+                    jetCorrLabel = ('SC5', 'Calo'), # example jet correction name; set to None for no JEC
+                    doType1MET   = True             # recompute Type1 MET using these jets
                     )
 
 #-------------------------------------------------
@@ -94,13 +114,15 @@ process.EventSelection = cms.PSet(
 process.out = cms.OutputModule("PoolOutputModule",
     process.EventSelection,
     process.tqafEventContent,
-    verbose = cms.untracked.bool(False),
-    fileName = cms.untracked.string('TQAFLayer1_Output.fromScratch_fast.root')
+    verbose = cms.untracked.bool(True),
+    dropMetaDataForDroppedData = cms.untracked.bool(True),                                
+    fileName = cms.untracked.string('TQAFLayer1_Output.fromAOD_fast.root')
 )
+
 
 #-------------------------------------------------
 # output paths; in order not to write the
-# persistent output to file comment the the output
+# persistent output to file comment the output
 # path
 #-------------------------------------------------
 
