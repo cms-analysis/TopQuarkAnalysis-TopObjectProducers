@@ -108,9 +108,13 @@ process.load("TopQuarkAnalysis.TopObjectProducers.patTuple_cff")
 from PhysicsTools.PatAlgos.tools.cmsswVersionTools import run22XonSummer08AODSIM
 run22XonSummer08AODSIM(process)
 
-## switch from clusters to rec hits in electron isolation
+## switch from clusters to rec hits in ECAL electron isolation
 from PhysicsTools.PatAlgos.recoLayer0.electronIsolation_cff import useElectronRecHitIsolation
 useElectronRecHitIsolation(process)
+
+## switch from clusters to rec hits in ECAL photon isolation
+from PhysicsTools.PatAlgos.recoLayer0.photonIsolation_cff import usePhotonRecHitIsolation
+usePhotonRecHitIsolation(process)
 
 #-------------------------------------------------
 # process paths;
