@@ -179,5 +179,8 @@ process.out = cms.OutputModule("PoolOutputModule",
 # path
 #-------------------------------------------------
 
+#process.dump=cms.EDAnalyzer('EventContentAnalyzer')
+#process.px=cms.Path(process.dump)
+
 ## output
 process.outpath = cms.EndPath(process.out)
