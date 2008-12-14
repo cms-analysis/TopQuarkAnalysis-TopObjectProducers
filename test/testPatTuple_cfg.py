@@ -169,8 +169,19 @@ process.out = cms.OutputModule("PoolOutputModule",
     verbose = cms.untracked.bool(True),
     dropMetaDataForDroppedData = cms.untracked.bool(True),                           
 ##  fileName = cms.untracked.string('/afs/cern.ch/user/r/rwolf/pccmsuhh06/testPatTuple_recHits_221.root')
-    fileName = cms.untracked.string('testPatTuple.root')
+    fileName = cms.untracked.string('testPatTuple.root'),
+    dataset = cms.untracked.PSet(
+            dataTier = cms.untracked.string('USER'),
+            filterName = cms.untracked.string('')
+                )
 )
+
+process.configurationMetadata = cms.untracked.PSet(
+    version = cms.untracked.string('$Revision: 1.11 $'),
+    annotation = cms.untracked.string('PAT tuple creation'),
+    name = cms.untracked.string('$Source: /cvs_server/repositories/CMSSW/CMSSW/TopQuarkAnalysis/TopObjectProducers/test/testPatTuple_cfg.py $')
+)
+
 
 
 #-------------------------------------------------
