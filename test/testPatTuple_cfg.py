@@ -108,13 +108,6 @@ process.load("TopQuarkAnalysis.TopObjectProducers.patTuple_cff")
 from PhysicsTools.PatAlgos.tools.cmsswVersionTools import run22XonSummer08AODSIM
 run22XonSummer08AODSIM(process)
 
-## switch from clusters to rec hits in ECAL electron isolation
-from PhysicsTools.PatAlgos.recoLayer0.electronIsolation_cff import useElectronRecHitIsolation
-useElectronRecHitIsolation(process)
-
-## switch from clusters to rec hits in ECAL photon isolation
-from PhysicsTools.PatAlgos.recoLayer0.photonIsolation_cff import usePhotonRecHitIsolation
-usePhotonRecHitIsolation(process)
 
 #-------------------------------------------------
 # process paths;
@@ -179,7 +172,7 @@ process.out = cms.OutputModule("PoolOutputModule",
 process.configurationMetadata = cms.untracked.PSet(
     version = cms.untracked.string('$Revision: 1.11 $'),
     annotation = cms.untracked.string('PAT tuple creation'),
-    name = cms.untracked.string('$Source: /cvs_server/repositories/CMSSW/CMSSW/TopQuarkAnalysis/TopObjectProducers/test/testPatTuple_cfg.py $')
+    name = cms.untracked.string('$Source: /cvs_server/repositories/CMSSW/CMSSW/TopQuarkAnalysis/TopObjectProducers/test/testPatTuple_cfg.py,v $')
 )
 
 
