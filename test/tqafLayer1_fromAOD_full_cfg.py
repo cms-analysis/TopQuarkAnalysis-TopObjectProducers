@@ -18,9 +18,9 @@ process.MessageLogger.cerr.threshold = 'INFO'
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
    #PAT test sample for 2.2.X
-   #'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_2_X_2008-11-03-STARTUP_V7-AODSIM.100.root'
+    'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_2_X_2008-11-03-STARTUP_V7-AODSIM.100.root'
    #PAT test sample for 2.1.X
-    'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_1_X_2008-07-08_STARTUP_V4-AODSIM.100.root'    
+   #'file:/afs/cern.ch/cms/PRS/top/cmssw-data/relval200-for-pat-testing/FullSimTTBar-2_1_X_2008-07-08_STARTUP_V4-AODSIM.100.root'    
     )
 )
 
@@ -39,7 +39,7 @@ process.load("Configuration.StandardSequences.Geometry_cff")
 
 ## configure conditions
 process.load("Configuration.StandardSequences.FrontierConditions_GlobalTag_cff")
-process.GlobalTag.globaltag = cms.string('STARTUP_V7::All')
+process.GlobalTag.globaltag = cms.string('IDEAL_V9::All')
 
 ## load magnetic field
 process.load("Configuration.StandardSequences.MagneticField_cff")
@@ -55,8 +55,8 @@ process.load("TopQuarkAnalysis.TopObjectProducers.tqafLayer1_cff")
 ## necessary fixes to run 2.2.X on 2.1.X data
 ## comment this when running on samples produced
 ## with 22X
-from PhysicsTools.PatAlgos.tools.cmsswVersionTools import run22XonSummer08AODSIM
-run22XonSummer08AODSIM(process)
+## from PhysicsTools.PatAlgos.tools.cmsswVersionTools import run22XonSummer08AODSIM
+## run22XonSummer08AODSIM(process)
 
 #-------------------------------------------------
 # process paths;
@@ -77,11 +77,11 @@ from TopQuarkAnalysis.TopObjectProducers.tqafLayer1_EventContent_cff import *
 makeTqafLayer1EventContent(process)
 
 ## uncomment the following two lines and edit the
-## corresponding file to replacegenbParticles by
+## corresponding file to replace genbParticles by
 ## pruned genParticles
 
-#from TopQuarkAnalysis.TopObjectProducers.tools.pruneGenParticles_cff import *
-#tqafPruneGenParticles(process)
+## from TopQuarkAnalysis.TopObjectProducers.tools.pruneGenParticles_cff import *
+## tqafPruneGenParticles(process)
 
 #-------------------------------------------------
 # add more and/or change jet collection(s)
@@ -91,8 +91,8 @@ from PhysicsTools.PatAlgos.tools.jetTools import *
 ## uncomment the following two lines and edit the
 ## corresponding file to add more jet collections
 
-#from TopQuarkAnalysis.TopObjectProducers.tools.addJetCollections_cff import *
-#tqafAddJetCollections(process)
+## from TopQuarkAnalysis.TopObjectProducers.tools.addJetCollections_cff import *
+## tqafAddJetCollections(process)
 
 ## switch pat default jet collection from IC5 to
 ## SC5
@@ -107,7 +107,7 @@ switchJetCollection(process,
                     genJetCollection = "sisCone5GenJets"                    
                     )
 
-# now set JEC by hand
+## now set JEC by hand
 process.jetCorrFactors.jetSource = cms.InputTag("sisCone5CaloJets")
 process.jetCorrFactors.L1Offset  = cms.string('none')
 process.jetCorrFactors.L2Relative= cms.string('Summer08_L2Relative_SC5Calo')

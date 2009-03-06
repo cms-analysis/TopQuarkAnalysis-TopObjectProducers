@@ -91,9 +91,20 @@ switchJetCollection(process,
                     runCleaner   = "CaloJet",       # =None if not to clean
                     doJTA        = True,            # run jet-track association & JetCharge
                     doBTagging   = True,            # run b-tagging
-                    jetCorrLabel = ('SC5', 'Calo'), # example jet correction name; set to None for no JEC
-                    doType1MET   = True             # recompute Type1 MET using these jets
+                    jetCorrLabel = None,            # example jet correction name; set to None for no JEC
+                    doType1MET   = True,            # recompute Type1 MET using these jets
+                    genJetCollection = "sisCone5GenJets"                       
                     )
+
+## now set JEC by hand
+process.jetCorrFactors.jetSource = cms.InputTag("sisCone5CaloJets")
+process.jetCorrFactors.L1Offset  = cms.string('none')
+process.jetCorrFactors.L2Relative= cms.string('Summer08_L2Relative_SC5Calo')
+process.jetCorrFactors.L3Absolute= cms.string('Summer08_L3Absolute_SC5Calo')
+process.jetCorrFactors.L4EMF     = cms.string('none')
+process.jetCorrFactors.L5Flavor  = cms.string('none')
+process.jetCorrFactors.L6UE      = cms.string('none')
+process.jetCorrFactors.L7Parton  = cms.string('none')
 
 #-------------------------------------------------
 # process output; first the event selection is
@@ -118,7 +129,6 @@ process.out = cms.OutputModule("PoolOutputModule",
     dropMetaDataForDroppedData = cms.untracked.bool(True),                                
     fileName = cms.untracked.string('TQAFLayer1_Output.fromAOD_fast.root')
 )
-
 
 #-------------------------------------------------
 # output paths; in order not to write the
